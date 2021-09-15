@@ -1,29 +1,20 @@
 # OpenTelemetry-Go gqlgen Instrumentation
 
-[![Go Reference](https://pkg.go.dev/badge/go.opentelemetry.io/contrib/instrumentation/github.com/99designs/gqlgen/otelgqlgen.svg)](https://pkg.go.dev/go.opentelemetry.io/contrib/instrumentation/github.com/99designs/gqlgen/otelgqlgen)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ravilushqa/otelgqlgen.svg)](https://pkg.go.dev/github.com/ravilushqa/otelgqlgen)
 
-Opentelemetry instrumentation that provides middleware for gqlgen.
+It is an OpenTelemetry instrumentation for Golang 99designs/gqlgen, a port from https://github.com/open-telemetry/opentelemetry-go-contrib/pull/761.
+
+It can only instrument traces for the present.
 
 ## Installation
 
 ```
-go get -u go.opentelemetry.io/contrib/instrumentation/github.com/99designs/gqlgen/otelgqlgen
+$ go get github.com/ravilushqa/otelgqlgen
 ```
 
 ## Example
 
 See [./example](./example).
-
-## Configuration
-
-The instrumentation can be used with:
-
-- Custom provider, default is global.
-  [`WithTracerProvider`](https://pkg.go.dev/go.opentelemetry.io/contrib/instrumentation/github.com/99designs/gqlgen/otelgqlgen#WithTracerProvider)
-  option.
-- Complexity extension, default is ComplexityLimit.
-  [`WithComplexityExtensionName`](https://pkg.go.dev/go.opentelemetry.io/contrib/instrumentation/github.com/99designs/gqlgen/otelgqlgen#WithComplexityExtensionName)
-  option.
 
 ## References
 
