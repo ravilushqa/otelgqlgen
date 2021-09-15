@@ -25,7 +25,7 @@ TIMEOUT = 60
 .DEFAULT_GOAL := precommit
 
 .PHONY: precommit ci
-precommit: license-check lint build examples test-default
+precommit: license-check lint examples test-default
 ci: precommit check-clean-work-tree test-coverage
 
 # Tools
@@ -126,7 +126,7 @@ lint: $(GOLANGCI_LINT)
 .PHONY: license-check
 license-check:
 	@licRes=$$(for f in $$(find . -type f \( -iname '*.go' -o -iname '*.sh' \) ! -path '**/third_party/*' ! -path './exporters/otlp/internal/opentelemetry-proto/*') ; do \
-	           awk '/Copyright Galaktionov Ravil|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
+	           awk '/Copyright Ravil Galaktionov|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 	   done); \
 	   if [ -n "$${licRes}" ]; then \
 	           echo "license header checking failed:"; echo "$${licRes}"; \
