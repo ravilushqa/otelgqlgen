@@ -13,7 +13,7 @@
 # limitations under the License.
 FROM golang:alpine AS base
 COPY . /src/
-WORKDIR /src/instrumentation/github.com/99designs/gqlgen/otelgqlgen/example
+WORKDIR /src/example
 
 FROM base AS gqlgen-server
 RUN go install ./server.go
