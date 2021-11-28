@@ -1,6 +1,6 @@
 module github.com/ravilushqa/otelgqlgen
 
-go 1.15
+go 1.16
 
 require (
 	github.com/99designs/gqlgen v0.14.0
