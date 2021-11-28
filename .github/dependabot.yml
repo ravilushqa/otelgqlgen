@@ -27,3 +27,23 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+  -
+    package-ecosystem: "gomod"
+    directory: "/example"
+    labels:
+      - dependencies
+      - go
+      - "Skip Changelog"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+  -
+    package-ecosystem: "docker"
+    directory: "/example"
+    labels:
+      - dependencies
+      - docker
+      - "Skip Changelog"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
