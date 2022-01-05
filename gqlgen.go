@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	tracerName      = "go.opentelemetry.io/contrib/instrumentation/github.com/99designs/gqlgen/otelgqlgen"
+	tracerName      = "github.com/ravilushqa/otelgqlgen"
 	extensionName   = "OpenTelemetry"
 	complexityLimit = "ComplexityLimit"
 )
