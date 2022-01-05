@@ -149,8 +149,11 @@ func Middleware(opts ...Option) Tracer {
 
 func operationName(ctx context.Context) string {
 	requestContext := graphql.GetOperationContext(ctx)
-	if requestContext.OperationName != "" {
-		return requestContext.OperationName
+	if requestContext.Doc != nil && len(requestContext.Doc.Operations) != 0 {
+		op := requestContext.Doc.Operations[0]
+		if op.Name != "" {
+			return op.Name
+		}
 	}
 	return GetOperationName(ctx)
 }
