@@ -149,13 +149,27 @@ func Middleware(opts ...Option) Tracer {
 
 func operationName(ctx context.Context) string {
 	requestContext := graphql.GetOperationContext(ctx)
-	requestName := "nameless-operation"
-	if requestContext.Doc != nil && len(requestContext.Doc.Operations) != 0 {
-		op := requestContext.Doc.Operations[0]
-		if op.Name != "" {
-			requestName = op.Name
-		}
+	if requestContext.OperationName != "" {
+		return requestContext.OperationName
 	}
+	return GetOperationName(ctx)
+}
 
-	return requestName
+type operationNameCtxKey struct{}
+
+// SetOperationName adds the operation name to the context so that the interceptors can use it.
+// It will replace the operation name if it already exists in the context.
+// example:
+// 	ctx = otelgqlgen.SetOperationName(r.Context(), "my-operation")
+//  	r = r.WithContext(ctx)
+func SetOperationName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, operationNameCtxKey{}, name)
+}
+
+// GetOperationName gets the operation name from the context.
+func GetOperationName(ctx context.Context) string {
+	if oc, _ := ctx.Value(operationNameCtxKey{}).(string); oc != "" {
+		return oc
+	}
+	return "nameless-operation"
 }
