@@ -231,6 +231,12 @@ func TestChildSpanFromGlobalTracerWithComplexity(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
+func TestOperationName(t *testing.T) {
+	operation := "ExampleOperationName"
+	ctx := SetOperationName(context.Background(), operation)
+	assert.Equal(t, operation, GetOperationName(ctx))
+}
+
 // newMockServer provides a server for use in resolver tests that isn't relying on generated code.
 // It isn't a perfect reproduction of a generated server, but it aims to be good enough to
 // test the handler package without relying on codegen.
