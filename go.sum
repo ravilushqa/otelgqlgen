@@ -56,8 +56,8 @@ github.com/vektah/gqlparser/v2 v2.3.1 h1:blIC0fCxGIr9pVjsc+BVI8XjYUtc2nCFRfnmP7F
 github.com/vektah/gqlparser/v2 v2.3.1/go.mod h1:i3mQIGIrbK2PD1RrCeMTlVbkF2FJ6WkU1KJlJlC+3F4=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.opentelemetry.io/contrib v1.3.0 h1:p9Gd+3dD7yB+AIph2Ltg11QDX6Y+yWMH0YQVTpTTP2c=
-go.opentelemetry.io/contrib v1.3.0/go.mod h1:FlyPNX9s4U6MCsWEc5YAK4KzKNHFDsjrDUZijJiXvy8=
+go.opentelemetry.io/contrib v1.4.0 h1:o+obgKZArn1GbM8zPCLYU9LZCI7lL6GcTZArn0qz1yw=
+go.opentelemetry.io/contrib v1.4.0/go.mod h1:FlyPNX9s4U6MCsWEc5YAK4KzKNHFDsjrDUZijJiXvy8=
 go.opentelemetry.io/otel v1.4.1 h1:QbINgGDDcoQUoMJa2mMaWno49lja9sHwp6aoa2n3a4g=
 go.opentelemetry.io/otel v1.4.1/go.mod h1:StM6F/0fSwpd8dKWDCdRr7uRvEPYdW0hBSlbdTiUde4=
 go.opentelemetry.io/otel/sdk v1.4.1 h1:J7EaW71E0v87qflB4cDolaqq3AcujGrtyIPGQoZOB0Y=
