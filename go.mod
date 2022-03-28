@@ -9,7 +9,6 @@ require (
 	github.com/vektah/gqlparser/v2 v2.4.1
 	go.opentelemetry.io/contrib v1.4.0
 	go.opentelemetry.io/otel v1.6.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.0
 	go.opentelemetry.io/otel/sdk v1.6.0
 	go.opentelemetry.io/otel/trace v1.6.0
 )
