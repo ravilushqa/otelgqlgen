@@ -7,7 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.38.0
 	github.com/itchyny/gojq v0.12.2
-	golang.org/x/tools v0.1.0
+	golang.org/x/tools v0.1.10
 )
 
 replace go.opentelemetry.io/otel => ../..
