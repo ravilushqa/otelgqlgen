@@ -87,7 +87,7 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	}
 
 	resp := next(ctx)
-	if len(resp.Errors) > 0 {
+	if resp != nil && len(resp.Errors) > 0 {
 		span.SetStatus(codes.Error, resp.Errors.Error())
 		span.RecordError(fmt.Errorf(resp.Errors.Error()))
 		span.SetAttributes(ResolverErrors(resp.Errors)...)

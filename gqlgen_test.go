@@ -335,6 +335,30 @@ func TestVariablesAttributesDisabled(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
+func TestNilResponse(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return (*graphql.Response)(nil), nil
+	})
+	srv.Use(Middleware())
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
 // newMockServer provides a server for use in resolver tests that isn't relying on generated code.
 // It isn't a perfect reproduction of a generated server, but it aims to be good enough to
 // test the handler package without relying on codegen.
