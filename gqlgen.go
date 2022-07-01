@@ -36,6 +36,7 @@ const (
 type Tracer struct {
 	complexityExtensionName string
 	tracer                  oteltrace.Tracer
+	disableVariables        bool
 }
 
 var _ interface {
@@ -81,7 +82,9 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		)
 	}
 
-	span.SetAttributes(RequestVariables(oc.Variables)...)
+	if !a.disableVariables {
+		span.SetAttributes(RequestVariables(oc.Variables)...)
+	}
 
 	resp := next(ctx)
 	if len(resp.Errors) > 0 {
@@ -142,7 +145,8 @@ func Middleware(opts ...Option) Tracer {
 	)
 
 	return Tracer{
-		tracer: tracer,
+		tracer:           tracer,
+		disableVariables: cfg.DisableVariables,
 	}
 
 }

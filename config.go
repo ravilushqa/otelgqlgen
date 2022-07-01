@@ -23,6 +23,7 @@ type config struct {
 	TracerProvider          trace.TracerProvider
 	Tracer                  trace.Tracer
 	ComplexityExtensionName string
+	DisableVariables        bool
 }
 
 // Option specifies instrumentation configuration options.
@@ -44,9 +45,16 @@ func WithTracerProvider(provider trace.TracerProvider) Option {
 	})
 }
 
-// WithComplexityExtensionName specifies complexity extension name
+// WithComplexityExtensionName specifies complexity extension name.
 func WithComplexityExtensionName(complexityExtensionName string) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.ComplexityExtensionName = complexityExtensionName
+	})
+}
+
+// WithoutVariables disables the variables attributes.
+func WithoutVariables() Option {
+	return optionFunc(func(cfg *config) {
+		cfg.DisableVariables = true
 	})
 }
