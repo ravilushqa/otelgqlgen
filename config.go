@@ -15,6 +15,7 @@
 package otelgqlgen
 
 import (
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -23,8 +24,12 @@ type config struct {
 	TracerProvider          trace.TracerProvider
 	Tracer                  trace.Tracer
 	ComplexityExtensionName string
-	DisableVariables        bool
+	RequestVariablesBuilder RequestVariablesBuilderFunc
 }
+
+// RequestVariablesBuilderFunc is the signature of the function
+// used to build the request variables attributes.
+type RequestVariablesBuilderFunc func(requestVariables map[string]interface{}) []attribute.KeyValue
 
 // Option specifies instrumentation configuration options.
 type Option interface {
@@ -52,9 +57,19 @@ func WithComplexityExtensionName(complexityExtensionName string) Option {
 	})
 }
 
-// WithoutVariables disables the variables attributes.
+// WithRequestVariablesAttributesBuilder allows specifying a custom function
+// to handle the building of the attributes for the variables.
+func WithRequestVariablesAttributesBuilder(builder RequestVariablesBuilderFunc) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.RequestVariablesBuilder = builder
+	})
+}
+
+// WithoutVariables allows disabling the variables attributes.
 func WithoutVariables() Option {
 	return optionFunc(func(cfg *config) {
-		cfg.DisableVariables = true
+		cfg.RequestVariablesBuilder = func(requestVariables map[string]interface{}) []attribute.KeyValue {
+			return nil
+		}
 	})
 }

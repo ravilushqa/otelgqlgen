@@ -34,9 +34,9 @@ const (
 )
 
 type Tracer struct {
-	complexityExtensionName string
-	tracer                  oteltrace.Tracer
-	disableVariables        bool
+	complexityExtensionName     string
+	tracer                      oteltrace.Tracer
+	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 }
 
 var _ interface {
@@ -82,8 +82,8 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		)
 	}
 
-	if !a.disableVariables {
-		span.SetAttributes(RequestVariables(oc.Variables)...)
+	if a.requestVariablesBuilderFunc != nil {
+		span.SetAttributes(a.requestVariablesBuilderFunc(oc.Variables)...)
 	}
 
 	resp := next(ctx)
@@ -131,7 +131,9 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 // requests.  The service parameter should describe the name of the
 // (virtual) server handling the request. extension parameter may be empty string.
 func Middleware(opts ...Option) Tracer {
-	cfg := config{}
+	cfg := config{
+		RequestVariablesBuilder: RequestVariables,
+	}
 	for _, opt := range opts {
 		opt.apply(&cfg)
 	}
@@ -145,8 +147,8 @@ func Middleware(opts ...Option) Tracer {
 	)
 
 	return Tracer{
-		tracer:           tracer,
-		disableVariables: cfg.DisableVariables,
+		tracer:                      tracer,
+		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 	}
 
 }
