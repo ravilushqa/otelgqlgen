@@ -252,7 +252,7 @@ func TestVariablesAttributes(t *testing.T) {
 	})
 	srv.Use(Middleware())
 
-	body := strings.NewReader(fmt.Sprintf("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}"))
+	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
 	r := httptest.NewRequest("POST", "/foo", body)
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -290,7 +290,7 @@ func TestVariablesAttributesCustomBuilder(t *testing.T) {
 		return variables
 	})))
 
-	body := strings.NewReader(fmt.Sprintf("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}"))
+	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
 	r := httptest.NewRequest("POST", "/foo", body)
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -320,7 +320,7 @@ func TestVariablesAttributesDisabled(t *testing.T) {
 	})
 	srv.Use(Middleware(WithoutVariables()))
 
-	body := strings.NewReader(fmt.Sprintf("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}"))
+	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
 	r := httptest.NewRequest("POST", "/foo", body)
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()

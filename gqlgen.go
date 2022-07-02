@@ -131,14 +131,15 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 // requests.  The service parameter should describe the name of the
 // (virtual) server handling the request. extension parameter may be empty string.
 func Middleware(opts ...Option) Tracer {
-	cfg := config{
-		RequestVariablesBuilder: RequestVariables,
-	}
+	cfg := config{}
 	for _, opt := range opts {
 		opt.apply(&cfg)
 	}
 	if cfg.TracerProvider == nil {
 		cfg.TracerProvider = otel.GetTracerProvider()
+	}
+	if cfg.RequestVariablesBuilder == nil {
+		cfg.RequestVariablesBuilder = RequestVariables
 	}
 
 	tracer := cfg.TracerProvider.Tracer(
