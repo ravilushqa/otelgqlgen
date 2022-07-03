@@ -30,6 +30,7 @@ import (
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -237,6 +238,127 @@ func TestOperationName(t *testing.T) {
 	assert.Equal(t, operation, GetOperationName(ctx))
 }
 
+func TestVariablesAttributes(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware())
+
+	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
+	r := httptest.NewRequest("POST", "/foo", body)
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	spans := spanRecorder.Ended()
+	assert.Len(t, spans[1].Attributes(), 2)
+	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
+	assert.Equal(t, attribute.Key("gql.request.variables.id"), spans[1].Attributes()[1].Key)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestVariablesAttributesCustomBuilder(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithRequestVariablesAttributesBuilder(func(requestVariables map[string]interface{}) []attribute.KeyValue {
+		variables := make([]attribute.KeyValue, 0, len(requestVariables))
+		for k, v := range requestVariables {
+			variables = append(variables,
+				attribute.String(k, fmt.Sprintf("%+v", v)),
+			)
+		}
+		return variables
+	})))
+
+	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
+	r := httptest.NewRequest("POST", "/foo", body)
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	spans := spanRecorder.Ended()
+	assert.Len(t, spans[1].Attributes(), 2)
+	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
+	assert.Equal(t, attribute.Key("id"), spans[1].Attributes()[1].Key)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestVariablesAttributesDisabled(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithoutVariables()))
+
+	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
+	r := httptest.NewRequest("POST", "/foo", body)
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	spans := spanRecorder.Ended()
+	assert.Len(t, spans[1].Attributes(), 1)
+	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestNilResponse(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return (*graphql.Response)(nil), nil
+	})
+	srv.Use(Middleware())
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
 // newMockServer provides a server for use in resolver tests that isn't relying on generated code.
 // It isn't a perfect reproduction of a generated server, but it aims to be good enough to
 // test the handler package without relying on codegen.
@@ -304,7 +426,7 @@ func newMockServer(resolver func(ctx context.Context) (interface{}, error)) *han
 }
 
 // newMockServerError provides a server for use in resolver error tests that isn't relying on generated code.
-// It isnt a perfect reproduction of a generated server, but it aims to be good enough to
+// It isn't a perfect reproduction of a generated server, but it aims to be good enough to
 // test the handler package without relying on codegen.
 func newMockServerError(resolver func(ctx context.Context) (interface{}, error)) *handler.Server {
 	schema := gqlparser.MustLoadSchema(&ast.Source{Input: `

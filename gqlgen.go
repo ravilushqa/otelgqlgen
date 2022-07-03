@@ -34,8 +34,9 @@ const (
 )
 
 type Tracer struct {
-	complexityExtensionName string
-	tracer                  oteltrace.Tracer
+	complexityExtensionName     string
+	tracer                      oteltrace.Tracer
+	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 }
 
 var _ interface {
@@ -81,10 +82,12 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		)
 	}
 
-	span.SetAttributes(RequestVariables(oc.Variables)...)
+	if a.requestVariablesBuilderFunc != nil {
+		span.SetAttributes(a.requestVariablesBuilderFunc(oc.Variables)...)
+	}
 
 	resp := next(ctx)
-	if len(resp.Errors) > 0 {
+	if resp != nil && len(resp.Errors) > 0 {
 		span.SetStatus(codes.Error, resp.Errors.Error())
 		span.RecordError(fmt.Errorf(resp.Errors.Error()))
 		span.SetAttributes(ResolverErrors(resp.Errors)...)
@@ -135,6 +138,9 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.TracerProvider == nil {
 		cfg.TracerProvider = otel.GetTracerProvider()
 	}
+	if cfg.RequestVariablesBuilder == nil {
+		cfg.RequestVariablesBuilder = RequestVariables
+	}
 
 	tracer := cfg.TracerProvider.Tracer(
 		tracerName,
@@ -142,7 +148,8 @@ func Middleware(opts ...Option) Tracer {
 	)
 
 	return Tracer{
-		tracer: tracer,
+		tracer:                      tracer,
+		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 	}
 
 }
