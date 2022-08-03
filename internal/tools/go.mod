@@ -7,6 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golangci/golangci-lint v1.46.2
 	github.com/itchyny/gojq v0.12.8
+	github.com/mitchellh/go-ps v1.0.0
 	golang.org/x/tools v0.1.12
 )
 
