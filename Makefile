@@ -41,13 +41,8 @@ $(TOOLS)/%: | $(TOOLS)
 GOLANGCI_LINT = $(TOOLS)/golangci-lint
 $(TOOLS)/golangci-lint: PACKAGE=github.com/golangci/golangci-lint/cmd/golangci-lint
 
-STRINGER = $(TOOLS)/stringer
-$(TOOLS)/stringer: PACKAGE=golang.org/x/tools/cmd/stringer
-
-$(TOOLS)/gojq: PACKAGE=github.com/itchyny/gojq/cmd/gojq
-
 .PHONY: tools
-tools: $(GOLANGCI_LINT) $(STRINGER) $(TOOLS)/gojq
+tools: $(GOLANGCI_LINT)
 
 
 # Build
@@ -72,7 +67,7 @@ build: generate
 	set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 	  echo "$(GO) build $${dir}/..."; \
 	  (cd "$${dir}" && \
-	    $(GO) build ./... && \
+	    $(GO) build -o ./bin/main ./... && \
 		$(GO) list ./... \
 		  | grep -v third_party \
 		  | xargs $(GO) test -vet=off -run xxxxxMatchNothingxxxxx >/dev/null); \
