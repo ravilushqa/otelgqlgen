@@ -162,7 +162,7 @@ func operationName(ctx context.Context) string {
 			return op.Name
 		}
 	}
-	return GetOperationName()
+	return GetOperationName(ctx)
 }
 
 type operationNameCtxKey struct{}
