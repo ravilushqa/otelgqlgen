@@ -162,7 +162,7 @@ func operationName(ctx context.Context) string {
 			return op.Name
 		}
 	}
-	return GetOperationName(ctx)
+	return GetOperationName()
 }
 
 type operationNameCtxKey struct{}
@@ -170,8 +170,9 @@ type operationNameCtxKey struct{}
 // SetOperationName adds the operation name to the context so that the interceptors can use it.
 // It will replace the operation name if it already exists in the context.
 // example:
-// 	ctx = otelgqlgen.SetOperationName(r.Context(), "my-operation")
-//  	r = r.WithContext(ctx)
+//
+//		ctx = otelgqlgen.SetOperationName(r.Context(), "my-operation")
+//	 	r = r.WithContext(ctx)
 func SetOperationName(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, operationNameCtxKey{}, name)
 }
