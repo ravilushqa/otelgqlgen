@@ -23,5 +23,6 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/itchyny/gojq"
 	_ "github.com/mitchellh/go-ps"
+	_ "github.com/quasilyte/go-ruleguard/dsl"
 	_ "golang.org/x/tools/cmd/stringer"
 )
