@@ -24,7 +24,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Module cache
-        uses: actions/cache@v3.0.5
+        uses: actions/cache@v3.0.6
         env:
           cache-name: go-mod-cache
         with:
@@ -75,7 +75,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Module cache
-        uses: actions/cache@v3.0.5
+        uses: actions/cache@v3.0.6
         env:
           cache-name: go-mod-cache
         with:
@@ -98,7 +98,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Module cache
-        uses: actions/cache@v3.0.5
+        uses: actions/cache@v3.0.6
         env:
           cache-name: go-mod-cache
         with:
@@ -151,7 +151,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
       - name: Module cache
-        uses: actions/cache@v3.0.5
+        uses: actions/cache@v3.0.6
         env:
           cache-name: go-mod-cache
         with:
