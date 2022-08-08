@@ -3,9 +3,9 @@ module github.com/ravilushqa/otelgqlgen
 go 1.17
 
 require (
-	github.com/99designs/gqlgen v0.17.10
+	github.com/99designs/gqlgen v0.17.13
 	github.com/stretchr/testify v1.7.1
-	github.com/vektah/gqlparser/v2 v2.4.5
+	github.com/vektah/gqlparser/v2 v2.4.6
 	go.opentelemetry.io/contrib v1.7.0
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/sdk v1.7.0
