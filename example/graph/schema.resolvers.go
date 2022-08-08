@@ -6,10 +6,11 @@ package graph
 import (
 	"context"
 
-	"github.com/ravilushqa/otelgqlgen/example/graph/generated"
-	"github.com/ravilushqa/otelgqlgen/example/graph/model"
 	"go.opentelemetry.io/otel/attribute"
 	oteltrace "go.opentelemetry.io/otel/trace"
+
+	"github.com/ravilushqa/otelgqlgen/example/graph/generated"
+	"github.com/ravilushqa/otelgqlgen/example/graph/model"
 )
 
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, error) {

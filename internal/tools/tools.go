@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build tools
 // +build tools
 
 package tools
 
 import (
-	_ "github.com/client9/misspell/cmd/misspell"
-	_ "github.com/gogo/protobuf/protoc-gen-gogofast"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
-	_ "github.com/itchyny/gojq"
-	_ "golang.org/x/tools/cmd/stringer"
 )
