@@ -69,6 +69,30 @@ func TestChildSpanFromGlobalTracer(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
+func TestExecutedOperationNameAsSpanName(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware())
+
+	r := httptest.NewRequest("GET", "/foo?operationName=C&query=query%20A%20%7B__typename%7Dquery%20B%20%7B__typename%7Dquery%20C%20%7B__typename%7D", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, "C", codes.Unset)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
 func TestChildSpanFromGlobalTracerWithNamed(t *testing.T) {
 	spanRecorder := tracetest.NewSpanRecorder()
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
