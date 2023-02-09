@@ -166,6 +166,48 @@ func TestChildSpanWithComplexityExtension(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
+func TestChildSpanWithDropFromFields(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithCreateSpanFromFields(func(ctx *graphql.FieldContext) bool {
+		return ctx.IsResolver || ctx.IsMethod
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	spans := spanRecorder.Ended()
+	if got, expected := len(spans), 1; got != expected {
+		t.Fatalf("got %d spans, expected %d", got, expected)
+	}
+
+	responseSpan := spans[0]
+	if !responseSpan.SpanContext().IsValid() {
+		t.Fatalf("invalid span created: %#v", responseSpan.SpanContext())
+	}
+
+	if responseSpan.Name() != namelessQueryName {
+		t.Errorf("expected name on span %s; got: %q", namelessQueryName, responseSpan.Name())
+	}
+
+	for _, s := range spanRecorder.Ended() {
+		assert.Equal(t, s.Status().Code, codes.Unset)
+	}
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
 func TestGetSpanNotInstrumented(t *testing.T) {
 	spanRecorder := tracetest.NewSpanRecorder()
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))

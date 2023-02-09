@@ -37,6 +37,7 @@ type Tracer struct {
 	complexityExtensionName     string
 	tracer                      oteltrace.Tracer
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
+	createSpanFromFields        FieldsPredicateFunc
 }
 
 var _ interface {
@@ -98,6 +99,9 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 
 func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 	fc := graphql.GetFieldContext(ctx)
+	if !a.createSpanFromFields(fc) {
+		return next(ctx)
+	}
 	ctx, span := a.tracer.Start(ctx,
 		fc.Field.ObjectDefinition.Name+"/"+fc.Field.Name,
 		oteltrace.WithSpanKind(oteltrace.SpanKindServer),
@@ -141,6 +145,9 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.RequestVariablesBuilder == nil {
 		cfg.RequestVariablesBuilder = RequestVariables
 	}
+	if cfg.CreateSpanFromFields == nil {
+		cfg.CreateSpanFromFields = alwaysTrue()
+	}
 
 	tracer := cfg.TracerProvider.Tracer(
 		tracerName,
@@ -150,8 +157,16 @@ func Middleware(opts ...Option) Tracer {
 	return Tracer{
 		tracer:                      tracer,
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
+		createSpanFromFields:        cfg.CreateSpanFromFields,
 	}
 
+}
+
+// alwaysTrue returns a FieldsPredicateFunc that always returns true.
+func alwaysTrue() FieldsPredicateFunc {
+	return func(ctx *graphql.FieldContext) bool {
+		return true
+	}
 }
 
 func operationName(ctx context.Context) string {
