@@ -37,7 +37,7 @@ type Tracer struct {
 	complexityExtensionName     string
 	tracer                      oteltrace.Tracer
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
-	createSpanFromFields        FieldsPredicateFunc
+	shouldCreateSpanFromFields  FieldsPredicateFunc
 }
 
 var _ interface {
@@ -99,7 +99,7 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 
 func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 	fc := graphql.GetFieldContext(ctx)
-	if !a.createSpanFromFields(fc) {
+	if !a.shouldCreateSpanFromFields(fc) {
 		return next(ctx)
 	}
 	ctx, span := a.tracer.Start(ctx,
@@ -145,8 +145,8 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.RequestVariablesBuilder == nil {
 		cfg.RequestVariablesBuilder = RequestVariables
 	}
-	if cfg.CreateSpanFromFields == nil {
-		cfg.CreateSpanFromFields = alwaysTrue()
+	if cfg.ShouldCreateSpanFromFields == nil {
+		cfg.ShouldCreateSpanFromFields = alwaysTrue()
 	}
 
 	tracer := cfg.TracerProvider.Tracer(
@@ -157,7 +157,7 @@ func Middleware(opts ...Option) Tracer {
 	return Tracer{
 		tracer:                      tracer,
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
-		createSpanFromFields:        cfg.CreateSpanFromFields,
+		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
 	}
 
 }

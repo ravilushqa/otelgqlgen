@@ -24,11 +24,11 @@ type FieldsPredicateFunc func(ctx *graphql.FieldContext) bool
 
 // config is used to configure the mongo tracer.
 type config struct {
-	TracerProvider          trace.TracerProvider
-	Tracer                  trace.Tracer
-	ComplexityExtensionName string
-	RequestVariablesBuilder RequestVariablesBuilderFunc
-	CreateSpanFromFields    FieldsPredicateFunc
+	TracerProvider             trace.TracerProvider
+	Tracer                     trace.Tracer
+	ComplexityExtensionName    string
+	RequestVariablesBuilder    RequestVariablesBuilderFunc
+	ShouldCreateSpanFromFields FieldsPredicateFunc
 }
 
 // RequestVariablesBuilderFunc is the signature of the function
@@ -79,9 +79,9 @@ func WithoutVariables() Option {
 }
 
 // WithCreateSpanFromFields allows specifying a custom function
-// to handle the creation of the spans from the GraphQL context fields.
+// to handle the creation or not of spans regarding the GraphQL context fields.
 func WithCreateSpanFromFields(predicate FieldsPredicateFunc) Option {
 	return optionFunc(func(cfg *config) {
-		cfg.CreateSpanFromFields = predicate
+		cfg.ShouldCreateSpanFromFields = predicate
 	})
 }
