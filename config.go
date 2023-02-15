@@ -15,16 +15,20 @@
 package otelgqlgen
 
 import (
+	"github.com/99designs/gqlgen/graphql"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
+type FieldsPredicateFunc func(ctx *graphql.FieldContext) bool
+
 // config is used to configure the mongo tracer.
 type config struct {
-	TracerProvider          trace.TracerProvider
-	Tracer                  trace.Tracer
-	ComplexityExtensionName string
-	RequestVariablesBuilder RequestVariablesBuilderFunc
+	TracerProvider             trace.TracerProvider
+	Tracer                     trace.Tracer
+	ComplexityExtensionName    string
+	RequestVariablesBuilder    RequestVariablesBuilderFunc
+	ShouldCreateSpanFromFields FieldsPredicateFunc
 }
 
 // RequestVariablesBuilderFunc is the signature of the function
@@ -71,5 +75,13 @@ func WithoutVariables() Option {
 		cfg.RequestVariablesBuilder = func(requestVariables map[string]interface{}) []attribute.KeyValue {
 			return nil
 		}
+	})
+}
+
+// WithCreateSpanFromFields allows specifying a custom function
+// to handle the creation or not of spans regarding the GraphQL context fields.
+func WithCreateSpanFromFields(predicate FieldsPredicateFunc) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.ShouldCreateSpanFromFields = predicate
 	})
 }
