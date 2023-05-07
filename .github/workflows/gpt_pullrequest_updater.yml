@@ -29,6 +29,7 @@ jobs:
           go build -o review ./cmd/review
 
       - name: Update Pull Request Description
+        if: github.event.pull_request.user.login == github.event.pull_request.user.login
         run: |
           ./gpt-pullrequest-updater/description
         env:
