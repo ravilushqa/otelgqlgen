@@ -55,6 +55,10 @@ func (a Tracer) Validate(_ graphql.ExecutableSchema) error {
 }
 
 func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
+	if !graphql.HasOperationContext(ctx) {
+		return next(ctx)
+	}
+
 	ctx, span := a.tracer.Start(ctx, operationName(ctx), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
 	defer span.End()
 	if !span.IsRecording() {

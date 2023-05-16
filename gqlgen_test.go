@@ -304,6 +304,28 @@ func TestOperationName(t *testing.T) {
 	assert.Equal(t, operation, GetOperationName(ctx))
 }
 
+func TestOperationNameInvalidInputJSON(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware())
+
+	// invalid json body
+	body := strings.NewReader("")
+	r := httptest.NewRequest("POST", "/foo", body)
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, w.Body.String())
+	assert.JSONEq(t, `{"errors":[{"message":"json request body could not be decoded: EOF body:"}],"data":null}`, w.Body.String())
+}
+
 func TestVariablesAttributes(t *testing.T) {
 	spanRecorder := tracetest.NewSpanRecorder()
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
