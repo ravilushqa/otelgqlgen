@@ -33,6 +33,7 @@ const (
 	complexityLimit = "ComplexityLimit"
 )
 
+// Tracer is a GraphQL extension that traces GraphQL requests.
 type Tracer struct {
 	complexityExtensionName     string
 	tracer                      oteltrace.Tracer
@@ -46,14 +47,17 @@ var _ interface {
 	graphql.FieldInterceptor
 } = Tracer{}
 
+// ExtensionName returns the extension name.
 func (a Tracer) ExtensionName() string {
 	return extensionName
 }
 
+// Validate checks if the extension is configured properly.
 func (a Tracer) Validate(_ graphql.ExecutableSchema) error {
 	return nil
 }
 
+// InterceptResponse intercepts the incoming request.
 func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
 	if !graphql.HasOperationContext(ctx) {
 		return next(ctx)
@@ -101,6 +105,7 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	return resp
 }
 
+// InterceptField intercepts the incoming request.
 func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if !a.shouldCreateSpanFromFields(fc) {
