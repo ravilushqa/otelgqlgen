@@ -11,9 +11,44 @@ It can only instrument traces for the present.
 
 ## Installation
 
+To install the otelgqlgen package, use the following command:
+
+```bash
+go get github.com/ravilushqa/otelgqlgen
 ```
-$ go get github.com/ravilushqa/otelgqlgen
+
+## Usage
+
+Below is a basic example of how to use otelgqlgen:
+
+```go
+package main
+
+import (
+    "github.com/99designs/gqlgen/graphql/handler"
+    "github.com/ravilushqa/otelgqlgen"
+    "github.com/myorg/mygqlgenapi/graph"
+)
+
+func main() {
+    srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+
+    // Add the otelgqlgen middleware to add OpenTelemetry tracing
+    srv.Use(otelgqlgen.Middleware())
+
+    // Your usual server setup code...
+}
 ```
+
+### Configuration Options
+
+otelgqlgen provides several options to customize the tracing behavior:
+
+- `WithTracerProvider(provider)`: Specifies a custom tracer provider. By default, the global OpenTelemetry tracer provider is used.
+- `WithComplexityExtensionName(name)`: Specifies a name for the complexity extension. By default, a name is automatically generated.
+- `WithRequestVariablesAttributesBuilder(builder)`: Specifies a custom function to build the attributes for the request variables.
+- `WithoutVariables()`: Disables the variables attributes.
+- `WithCreateSpanFromFields(predicate)`: Specifies a custom function to control whether a span should be created based on the GraphQL context fields.
 
 ## Example
 
@@ -46,3 +81,7 @@ The project follows the [Release Policy](https://golang.org/doc/devel/release#po
 
 - [GraphQL](https://graphql.org/)
 - [gqlgen](https://gqlgen.com)
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See the LICENSE file for details.
