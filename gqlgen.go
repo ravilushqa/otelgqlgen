@@ -183,6 +183,9 @@ func operationName(ctx context.Context) string {
 	if opName := opContext.OperationName; opName != "" {
 		return opName
 	}
+	if opContext.Operation != nil && opContext.Operation.Name != "" {
+		return opContext.Operation.Name
+	}
 	return GetOperationName(ctx)
 }
 
