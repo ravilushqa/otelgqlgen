@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -69,7 +70,7 @@ func TestChildSpanFromGlobalTracer(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
-func TestExecutedOperationNameAsSpanName(t *testing.T) {
+func TestExecutedOperationNameAsSpanNameWithOperationNameParameter(t *testing.T) {
 	spanRecorder := tracetest.NewSpanRecorder()
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
 	otel.SetTracerProvider(provider)
@@ -83,12 +84,38 @@ func TestExecutedOperationNameAsSpanName(t *testing.T) {
 	})
 	srv.Use(Middleware())
 
-	r := httptest.NewRequest("GET", "/foo?operationName=C&query=query%20A%20%7B__typename%7Dquery%20B%20%7B__typename%7Dquery%20C%20%7B__typename%7D", nil)
+	query := url.QueryEscape("query A {__typename} query B {__typename} query C {__typename}")
+	r := httptest.NewRequest("GET", fmt.Sprintf("/foo?operationName=C&query=%s", query), nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, r)
 
 	testSpans(t, spanRecorder, "C", codes.Unset)
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestExecutedOperationNameAsSpanNameWithoutOperationNameParameter(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware())
+
+	query := url.QueryEscape("query ThisIsOperationName {__typename}")
+	r := httptest.NewRequest("GET", fmt.Sprintf("/foo?query=%s", query), nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Unset)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
