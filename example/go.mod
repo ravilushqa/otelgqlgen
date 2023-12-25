@@ -1,6 +1,6 @@
 module github.com/ravilushqa/otelgqlgen/example
 
-go 1.19
+go 1.20
 
 replace github.com/ravilushqa/otelgqlgen => ../
 
