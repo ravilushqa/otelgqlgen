@@ -21,6 +21,6 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.1 // indirect; indirect // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	go.opentelemetry.io/contrib v1.16.1 // indirect
+	go.opentelemetry.io/contrib v1.21.1 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 )
