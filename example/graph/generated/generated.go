@@ -1530,18 +1530,21 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = graphql.MarshalString("Query")
 		case "getUser":
 			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
+			out.Concurrently(
+				i,
+				func(ctx2 context.Context) (res graphql.Marshaler) {
+					defer func() {
+						if r := recover(); r != nil {
+							ec.Error(ctx, ec.Recover(ctx, r))
+						}
+					}()
+					res = ec._Query_getUser(ctx, field)
+					if res == graphql.Null {
+						atomic.AddUint32(&invalids, 1)
 					}
-				}()
-				res = ec._Query_getUser(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+					return res
+				},
+			)
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -1550,7 +1553,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1582,7 +1585,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1621,7 +1624,7 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1657,7 +1660,7 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1703,7 +1706,7 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1739,7 +1742,7 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1780,7 +1783,7 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
@@ -1823,7 +1826,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-	out.Dispatch()
+	out.Dispatch(ctx)
 	if invalids > 0 {
 		return graphql.Null
 	}
