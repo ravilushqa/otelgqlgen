@@ -160,7 +160,7 @@ func Middleware(opts ...Option) Tracer {
 
 	tracer := cfg.TracerProvider.Tracer(
 		tracerName,
-		oteltrace.WithInstrumentationVersion(otelcontrib.SemVersion()),
+		oteltrace.WithInstrumentationVersion(otelcontrib.Version()),
 	)
 
 	return Tracer{
