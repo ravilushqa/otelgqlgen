@@ -32,6 +32,7 @@ type config struct {
 	RequestVariablesBuilder    RequestVariablesBuilderFunc
 	ShouldCreateSpanFromFields FieldsPredicateFunc
 	SpanKindSelectorFunc       SpanKindSelectorFunc
+	SetHTTPStatusCode          bool
 }
 
 // RequestVariablesBuilderFunc is the signature of the function
@@ -86,6 +87,13 @@ func WithoutVariables() Option {
 func WithCreateSpanFromFields(predicate FieldsPredicateFunc) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.ShouldCreateSpanFromFields = predicate
+	})
+}
+
+// WithSetHTTPStatusCode allows setting the HTTP status code for the GraphQL span.
+func WithSetHTTPStatusCode(setStatus bool) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.SetHTTPStatusCode = setStatus
 	})
 }
 
