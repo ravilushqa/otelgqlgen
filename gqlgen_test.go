@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -376,9 +377,10 @@ func TestVariablesAttributes(t *testing.T) {
 
 	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
 	spans := spanRecorder.Ended()
-	assert.Len(t, spans[1].Attributes(), 2)
+	assert.Len(t, spans[1].Attributes(), 4)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
 	assert.Equal(t, attribute.Key("gql.request.variables.id"), spans[1].Attributes()[1].Key)
+	assert.Equal(t, semconv.HTTPResponseStatusCodeKey, spans[1].Attributes()[2].Key)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -414,9 +416,10 @@ func TestVariablesAttributesCustomBuilder(t *testing.T) {
 
 	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
 	spans := spanRecorder.Ended()
-	assert.Len(t, spans[1].Attributes(), 2)
+	assert.Len(t, spans[1].Attributes(), 4)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
 	assert.Equal(t, attribute.Key("id"), spans[1].Attributes()[1].Key)
+	assert.Equal(t, semconv.HTTPResponseStatusCodeKey, spans[1].Attributes()[2].Key)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -444,9 +447,9 @@ func TestVariablesAttributesDisabled(t *testing.T) {
 
 	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
 	spans := spanRecorder.Ended()
-	assert.Len(t, spans[1].Attributes(), 1)
+	assert.Len(t, spans[1].Attributes(), 3)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
-
+	assert.Equal(t, semconv.HTTPResponseStatusCodeKey, spans[1].Attributes()[1].Key) // nolint:staticcheck
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 

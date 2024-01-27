@@ -17,6 +17,9 @@ package otelgqlgen
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"reflect"
+	"strconv"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -24,6 +27,7 @@ import (
 	otelcontrib "go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -96,11 +100,31 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	}
 
 	resp := next(ctx)
+	var statusCode = http.StatusOK
 	if resp != nil && len(resp.Errors) > 0 {
+		statusCode = http.StatusInternalServerError
 		span.SetStatus(codes.Error, resp.Errors.Error())
 		span.RecordError(fmt.Errorf(resp.Errors.Error()))
 		span.SetAttributes(ResolverErrors(resp.Errors)...)
+		if resp.Errors[0].Extensions["code"] != nil {
+			var code = resp.Errors[0].Extensions["code"]
+			if reflect.TypeOf(code).Kind() == reflect.Int {
+				statusCode = code.(int)
+			} else if reflect.TypeOf(code).Kind() == reflect.Int32 {
+				statusCode = int(code.(int32))
+			} else if reflect.TypeOf(code).Kind() == reflect.String {
+				status, err := strconv.Atoi(code.(string))
+				if err == nil {
+					statusCode = status
+				}
+			}
+		}
 	}
+
+	// Stable: https://opentelemetry.io/docs/specs/semconv/http/http-spans/#common-attributes
+	span.SetAttributes(semconv.HTTPResponseStatusCode(statusCode))
+	// Experimental: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md#common-attributes
+	span.SetAttributes(semconv.HTTPStatusCode(statusCode)) // nolint:staticcheck
 
 	return resp
 }
@@ -131,11 +155,31 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	resp, err := next(ctx)
 
 	errList := graphql.GetFieldErrors(ctx, fc)
+	var statusCode = http.StatusOK
 	if len(errList) != 0 {
+		statusCode = http.StatusInternalServerError
 		span.SetStatus(codes.Error, errList.Error())
 		span.RecordError(fmt.Errorf(errList.Error()))
 		span.SetAttributes(ResolverErrors(errList)...)
+		if errList[0].Extensions["code"] != nil {
+			var code = errList[0].Extensions["code"]
+			if reflect.TypeOf(code).Kind() == reflect.Int {
+				statusCode = code.(int)
+			} else if reflect.TypeOf(code).Kind() == reflect.Int32 {
+				statusCode = int(code.(int32))
+			} else if reflect.TypeOf(code).Kind() == reflect.String {
+				status, err := strconv.Atoi(code.(string))
+				if err == nil {
+					statusCode = status
+				}
+			}
+		}
 	}
+
+	// Stable: https://opentelemetry.io/docs/specs/semconv/http/http-spans/#common-attributes
+	span.SetAttributes(semconv.HTTPResponseStatusCode(statusCode))
+	// Experimental: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md#common-attributes
+	span.SetAttributes(semconv.HTTPStatusCode(statusCode)) // nolint:staticcheck
 
 	return resp, err
 }
