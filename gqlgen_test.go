@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -268,7 +269,7 @@ func TestChildSpanFromGlobalTracerWithError(t *testing.T) {
 		}
 		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
 	})
-	srv.Use(Middleware())
+	srv.Use(Middleware(WithSetHTTPStatusCode(true)))
 	var gqlErrors gqlerror.List
 	var respErrors gqlerror.List
 	srv.AroundResponses(func(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
@@ -366,7 +367,7 @@ func TestVariablesAttributes(t *testing.T) {
 		}
 		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
 	})
-	srv.Use(Middleware())
+	srv.Use(Middleware(WithSetHTTPStatusCode(true)))
 
 	body := strings.NewReader("{\"variables\":{\"id\":1},\"query\":\"query ($id: Int!) {\\n  find(id: $id)\\n}\\n\"}")
 	r := httptest.NewRequest("POST", "/foo", body)
@@ -378,9 +379,10 @@ func TestVariablesAttributes(t *testing.T) {
 	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	spans := spanRecorder.Ended()
-	assert.Len(t, spans[1].Attributes(), 2)
+	assert.Len(t, spans[1].Attributes(), 4)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
 	assert.Equal(t, attribute.Key("gql.request.variables.id"), spans[1].Attributes()[1].Key)
+	assert.Equal(t, semconv.HTTPResponseStatusCodeKey, spans[1].Attributes()[2].Key)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
