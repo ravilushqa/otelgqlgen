@@ -8,7 +8,7 @@ require (
 	github.com/99designs/gqlgen v0.17.45
 	github.com/stretchr/testify v1.9.0
 	github.com/vektah/gqlparser/v2 v2.5.11
-	go.opentelemetry.io/contrib v1.25.0
+	go.opentelemetry.io/contrib v1.26.0
 	go.opentelemetry.io/otel v1.25.0
 	go.opentelemetry.io/otel/sdk v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
