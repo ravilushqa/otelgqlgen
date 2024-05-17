@@ -46,6 +46,8 @@ github.com/vektah/gqlparser/v2 v2.5.10 h1:6zSM4azXC9u4Nxy5YmdmGu4uKamfwsdKTwp5zs
 github.com/vektah/gqlparser/v2 v2.5.10/go.mod h1:1rCcfwB2ekJofmluGWXMSEnPMZgbxzwj6FaZ/4OT8Cc=
 github.com/vektah/gqlparser/v2 v2.5.11 h1:JJxLtXIoN7+3x6MBdtIP59TP1RANnY7pXOaDnADQSf8=
 github.com/vektah/gqlparser/v2 v2.5.11/go.mod h1:1rCcfwB2ekJofmluGWXMSEnPMZgbxzwj6FaZ/4OT8Cc=
+github.com/vektah/gqlparser/v2 v2.5.12 h1:COMhVVnql6RoaF7+aTBWiTADdpLGyZWU3K/NwW0ph98=
+github.com/vektah/gqlparser/v2 v2.5.12/go.mod h1:WQQjFc+I1YIzoPvZBhUQX7waZgg3pMLi0r8KymvAE2w=
 go.opentelemetry.io/contrib v1.21.1 h1:/U05KZ31iqMqAowhtW10cDPAViNY0tnpAacUgYBmuj8=
 go.opentelemetry.io/contrib v1.21.1/go.mod h1:usW9bPlrjHiJFbK0a6yK/M5wNHs3nLmtrT3vzhoD3co=
 go.opentelemetry.io/contrib v1.22.0 h1:QflN9z334UrOPzGGEr8VaMlWm+i+d9YLW8KzQtbvmBM=
