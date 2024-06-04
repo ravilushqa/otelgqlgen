@@ -2,7 +2,7 @@ module github.com/ravilushqa/otelgqlgen
 
 go 1.21
 
-toolchain go1.22.3
+toolchain go1.22.4
 
 require (
 	github.com/99designs/gqlgen v0.17.47
