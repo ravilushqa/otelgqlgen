@@ -6,6 +6,8 @@ github.com/99designs/gqlgen v0.17.46 h1:Dk/pSCMVp57z/vd6gwZ/wmqbPOL3i5iz4YQHTDfx
 github.com/99designs/gqlgen v0.17.46/go.mod h1:qRtiAeVPgkBBSPzZtoZXRRl5WkNrUTpp1OeVt61TmGU=
 github.com/99designs/gqlgen v0.17.47 h1:M9DTK8X3+3ATNBfZlHBwMwNngn4hhZWDxNmTiuQU5tQ=
 github.com/99designs/gqlgen v0.17.47/go.mod h1:ejVkldSdtmuudqmtfaiqjwlGXWAhIv0DKXGXFY25F04=
+github.com/99designs/gqlgen v0.17.48 h1:Wgk7n9PIdnmpsC1aJJV4eiZCGkAkoamKOtXAp/crpzQ=
+github.com/99designs/gqlgen v0.17.48/go.mod h1:hYeQ+ygPbcapbaHtHMbZ1DHMVNT+1tGU+fI+Hy4kqIo=
 github.com/agnivade/levenshtein v1.1.1 h1:QY8M92nrzkmr798gCo3kmMyqXFzdQVpxLlGPRBij0P8=
 github.com/agnivade/levenshtein v1.1.1/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVbJomOvKkmgYbo=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=
