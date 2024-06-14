@@ -17,6 +17,9 @@ package otelgqlgen
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"reflect"
+	"strconv"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -24,6 +27,7 @@ import (
 	otelcontrib "go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -39,6 +43,7 @@ type Tracer struct {
 	tracer                      oteltrace.Tracer
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 	shouldCreateSpanFromFields  FieldsPredicateFunc
+	setHTTPStatusCode           bool
 }
 
 var _ interface {
@@ -48,22 +53,22 @@ var _ interface {
 } = Tracer{}
 
 // ExtensionName returns the extension name.
-func (a Tracer) ExtensionName() string {
+func (gqlTracer Tracer) ExtensionName() string {
 	return extensionName
 }
 
 // Validate checks if the extension is configured properly.
-func (a Tracer) Validate(_ graphql.ExecutableSchema) error {
+func (gqlTracer Tracer) Validate(_ graphql.ExecutableSchema) error {
 	return nil
 }
 
 // InterceptResponse intercepts the incoming request.
-func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
+func (gqlTracer Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
 	if !graphql.HasOperationContext(ctx) {
 		return next(ctx)
 	}
 
-	ctx, span := a.tracer.Start(ctx, operationName(ctx), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
+	ctx, span := gqlTracer.tracer.Start(ctx, operationName(ctx), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
 	defer span.End()
 	if !span.IsRecording() {
 		return next(ctx)
@@ -74,7 +79,7 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	span.SetAttributes(
 		RequestQuery(oc.RawQuery),
 	)
-	complexityExtension := a.complexityExtensionName
+	complexityExtension := gqlTracer.complexityExtensionName
 	if complexityExtension == "" {
 		complexityExtension = complexityLimit
 	}
@@ -91,27 +96,49 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		)
 	}
 
-	if a.requestVariablesBuilderFunc != nil {
-		span.SetAttributes(a.requestVariablesBuilderFunc(oc.Variables)...)
+	if gqlTracer.requestVariablesBuilderFunc != nil {
+		span.SetAttributes(gqlTracer.requestVariablesBuilderFunc(oc.Variables)...)
 	}
 
 	resp := next(ctx)
-	if resp != nil && len(resp.Errors) > 0 {
-		span.SetStatus(codes.Error, resp.Errors.Error())
-		span.RecordError(fmt.Errorf(resp.Errors.Error()))
-		span.SetAttributes(ResolverErrors(resp.Errors)...)
+	if gqlTracer.setHTTPStatusCode {
+		var statusCode = http.StatusOK
+		if resp != nil && len(resp.Errors) > 0 {
+			statusCode = http.StatusInternalServerError
+			span.SetStatus(codes.Error, resp.Errors.Error())
+			span.RecordError(fmt.Errorf(resp.Errors.Error()))
+			span.SetAttributes(ResolverErrors(resp.Errors)...)
+			if resp.Errors[0].Extensions["code"] != nil {
+				var code = resp.Errors[0].Extensions["code"]
+				if reflect.TypeOf(code).Kind() == reflect.Int {
+					statusCode = code.(int)
+				} else if reflect.TypeOf(code).Kind() == reflect.Int32 {
+					statusCode = int(code.(int32))
+				} else if reflect.TypeOf(code).Kind() == reflect.String {
+					status, err := strconv.Atoi(code.(string))
+					if err == nil {
+						statusCode = status
+					}
+				}
+			}
+		}
+
+		// Stable: https://opentelemetry.io/docs/specs/semconv/http/http-spans/#common-attributes
+		span.SetAttributes(semconv.HTTPResponseStatusCode(statusCode))
+		// Experimental: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md#common-attributes
+		span.SetAttributes(semconv.HTTPStatusCode(statusCode)) // nolint:staticcheck
 	}
 
 	return resp
 }
 
 // InterceptField intercepts the incoming request.
-func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
+func (gqlTracer Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 	fc := graphql.GetFieldContext(ctx)
-	if !a.shouldCreateSpanFromFields(fc) {
+	if !gqlTracer.shouldCreateSpanFromFields(fc) {
 		return next(ctx)
 	}
-	ctx, span := a.tracer.Start(ctx,
+	ctx, span := gqlTracer.tracer.Start(ctx,
 		fc.Field.ObjectDefinition.Name+"/"+fc.Field.Name,
 		oteltrace.WithSpanKind(oteltrace.SpanKindServer),
 	)
@@ -131,11 +158,31 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	resp, err := next(ctx)
 
 	errList := graphql.GetFieldErrors(ctx, fc)
+	var statusCode = http.StatusOK
 	if len(errList) != 0 {
+		statusCode = http.StatusInternalServerError
 		span.SetStatus(codes.Error, errList.Error())
 		span.RecordError(fmt.Errorf(errList.Error()))
 		span.SetAttributes(ResolverErrors(errList)...)
+		if errList[0].Extensions["code"] != nil {
+			var code = errList[0].Extensions["code"]
+			if reflect.TypeOf(code).Kind() == reflect.Int {
+				statusCode = code.(int)
+			} else if reflect.TypeOf(code).Kind() == reflect.Int32 {
+				statusCode = int(code.(int32))
+			} else if reflect.TypeOf(code).Kind() == reflect.String {
+				status, err := strconv.Atoi(code.(string))
+				if err == nil {
+					statusCode = status
+				}
+			}
+		}
 	}
+
+	// Stable: https://opentelemetry.io/docs/specs/semconv/http/http-spans/#common-attributes
+	span.SetAttributes(semconv.HTTPResponseStatusCode(statusCode))
+	// Experimental: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md#common-attributes
+	span.SetAttributes(semconv.HTTPStatusCode(statusCode)) // nolint:staticcheck
 
 	return resp, err
 }
@@ -167,6 +214,7 @@ func Middleware(opts ...Option) Tracer {
 		tracer:                      tracer,
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
+		setHTTPStatusCode:           cfg.SetHTTPStatusCode,
 	}
 
 }
