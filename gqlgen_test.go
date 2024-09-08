@@ -65,7 +65,7 @@ func TestChildSpanFromGlobalTracer(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -90,7 +90,7 @@ func TestExecutedOperationNameAsSpanNameWithOperationNameParameter(t *testing.T)
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, "C", codes.Unset)
+	testSpans(t, spanRecorder, "C", codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -115,7 +115,7 @@ func TestExecutedOperationNameAsSpanNameWithoutOperationNameParameter(t *testing
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Unset)
+	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -141,7 +141,7 @@ func TestChildSpanFromGlobalTracerWithNamed(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, testQueryName, codes.Unset)
+	testSpans(t, spanRecorder, testQueryName, codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -164,7 +164,7 @@ func TestChildSpanFromCustomTracer(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -188,7 +188,7 @@ func TestChildSpanWithComplexityExtension(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -229,7 +229,7 @@ func TestChildSpanWithDropFromFields(t *testing.T) {
 	}
 
 	for _, s := range spanRecorder.Ended() {
-		assert.Equal(t, s.Status().Code, codes.Unset)
+		assert.Equal(t, s.Status().Code, codes.Ok)
 	}
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
@@ -310,7 +310,7 @@ func TestChildSpanFromGlobalTracerWithComplexity(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 	// second span because it's response span where stored RequestComplexityLimit attribute
 	attributes := spanRecorder.Ended()[1].Attributes()
 	var found bool
@@ -374,7 +374,7 @@ func TestVariablesAttributes(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 2)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -412,7 +412,7 @@ func TestVariablesAttributesCustomBuilder(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 2)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -442,7 +442,7 @@ func TestVariablesAttributesDisabled(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 1)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -469,7 +469,7 @@ func TestNilResponse(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -612,6 +612,6 @@ func testSpans(t *testing.T, spanRecorder *tracetest.SpanRecorder, spanName stri
 	}
 
 	for _, s := range spanRecorder.Ended() {
-		assert.Equal(t, s.Status().Code, spanCode)
+		assert.Equal(t, spanCode, s.Status().Code)
 	}
 }
