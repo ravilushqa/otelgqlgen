@@ -39,6 +39,7 @@ type Tracer struct {
 	tracer                      oteltrace.Tracer
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 	shouldCreateSpanFromFields  FieldsPredicateFunc
+	spanKindSelector            SpanKindSelectorFunc
 }
 
 var _ interface {
@@ -157,6 +158,9 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.ShouldCreateSpanFromFields == nil {
 		cfg.ShouldCreateSpanFromFields = alwaysTrue()
 	}
+	if cfg.SpanKindSelectorFunc == nil {
+		cfg.SpanKindSelectorFunc = alwaysServer()
+	}
 
 	tracer := cfg.TracerProvider.Tracer(
 		tracerName,
@@ -175,6 +179,12 @@ func Middleware(opts ...Option) Tracer {
 func alwaysTrue() FieldsPredicateFunc {
 	return func(ctx *graphql.FieldContext) bool {
 		return true
+	}
+}
+
+func alwaysServer() SpanKindSelectorFunc {
+	return func(ctx *graphql.FieldContext) oteltrace.SpanKind {
+		return oteltrace.SpanKindServer
 	}
 }
 

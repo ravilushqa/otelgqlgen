@@ -65,7 +65,7 @@ func TestChildSpanFromGlobalTracer(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -90,7 +90,7 @@ func TestExecutedOperationNameAsSpanNameWithOperationNameParameter(t *testing.T)
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, "C", codes.Unset)
+	testSpans(t, spanRecorder, "C", codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -115,7 +115,7 @@ func TestExecutedOperationNameAsSpanNameWithoutOperationNameParameter(t *testing
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Unset)
+	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -141,7 +141,7 @@ func TestChildSpanFromGlobalTracerWithNamed(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, testQueryName, codes.Unset)
+	testSpans(t, spanRecorder, testQueryName, codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -164,7 +164,7 @@ func TestChildSpanFromCustomTracer(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -188,7 +188,7 @@ func TestChildSpanWithComplexityExtension(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -283,7 +283,7 @@ func TestChildSpanFromGlobalTracerWithError(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Error)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Error, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 	assert.Equal(t, 1, len(gqlErrors))
@@ -310,7 +310,7 @@ func TestChildSpanFromGlobalTracerWithComplexity(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 	// second span because it's response span where stored RequestComplexityLimit attribute
 	attributes := spanRecorder.Ended()[1].Attributes()
 	var found bool
@@ -374,7 +374,7 @@ func TestVariablesAttributes(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 2)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -412,7 +412,7 @@ func TestVariablesAttributesCustomBuilder(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 2)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -442,7 +442,7 @@ func TestVariablesAttributesDisabled(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 1)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -469,7 +469,7 @@ func TestNilResponse(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -597,7 +597,7 @@ func newMockServerError(resolver func(ctx context.Context) (interface{}, error))
 	return srv
 }
 
-func testSpans(t *testing.T, spanRecorder *tracetest.SpanRecorder, spanName string, spanCode codes.Code) {
+func testSpans(t *testing.T, spanRecorder *tracetest.SpanRecorder, spanName string, spanCode codes.Code, spanKind trace.SpanKind) {
 	spans := spanRecorder.Ended()
 	if got, expected := len(spans), 2; got != expected {
 		t.Fatalf("got %d spans, expected %d", got, expected)
@@ -613,5 +613,6 @@ func testSpans(t *testing.T, spanRecorder *tracetest.SpanRecorder, spanName stri
 
 	for _, s := range spanRecorder.Ended() {
 		assert.Equal(t, s.Status().Code, spanCode)
+		assert.Equal(t, spanKind, s.SpanKind())
 	}
 }
