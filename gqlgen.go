@@ -114,9 +114,11 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	if !a.shouldCreateSpanFromFields(fc) {
 		return next(ctx)
 	}
+	name := fc.Field.ObjectDefinition.Name + "/" + fc.Field.Name
+	spanKind := a.spanKindSelector(name)
 	ctx, span := a.tracer.Start(ctx,
-		fc.Field.ObjectDefinition.Name+"/"+fc.Field.Name,
-		oteltrace.WithSpanKind(oteltrace.SpanKindServer),
+		name,
+		oteltrace.WithSpanKind(spanKind),
 	)
 	defer span.End()
 	if !span.IsRecording() {
