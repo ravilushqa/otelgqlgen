@@ -64,7 +64,9 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		return next(ctx)
 	}
 
-	ctx, span := a.tracer.Start(ctx, operationName(ctx), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
+	opName := operationName(ctx)
+	spanKind := a.spanKindSelector(opName)
+	ctx, span := a.tracer.Start(ctx, opName, oteltrace.WithSpanKind(spanKind))
 	defer span.End()
 	if !span.IsRecording() {
 		return next(ctx)
@@ -171,6 +173,7 @@ func Middleware(opts ...Option) Tracer {
 		tracer:                      tracer,
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
+		spanKindSelector:            cfg.SpanKindSelectorFunc,
 	}
 
 }
@@ -183,7 +186,7 @@ func alwaysTrue() FieldsPredicateFunc {
 }
 
 func alwaysServer() SpanKindSelectorFunc {
-	return func(ctx *graphql.FieldContext) oteltrace.SpanKind {
+	return func(operationName string) oteltrace.SpanKind {
 		return oteltrace.SpanKindServer
 	}
 }

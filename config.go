@@ -22,7 +22,7 @@ import (
 
 type FieldsPredicateFunc func(ctx *graphql.FieldContext) bool
 
-type SpanKindSelectorFunc func(ctx *graphql.FieldContext) trace.SpanKind
+type SpanKindSelectorFunc func(operationName string) trace.SpanKind
 
 // config is used to configure the mongo tracer.
 type config struct {
@@ -89,7 +89,7 @@ func WithCreateSpanFromFields(predicate FieldsPredicateFunc) Option {
 	})
 }
 
-// WithSpanKindSelector allows specifying a custom function that defines the SpanKind based on the name
+// WithSpanKindSelector allows specifying a custom function that defines the SpanKind based on the name of the operation
 func WithSpanKindSelector(spanKindSelector SpanKindSelectorFunc) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.SpanKindSelectorFunc = spanKindSelector
