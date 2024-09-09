@@ -336,7 +336,7 @@ func TestOperationNameInvalidInputJSON(t *testing.T) {
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
 	otel.SetTracerProvider(provider)
 
-	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+	srv := newMockServer(func(_ context.Context) (interface{}, error) {
 		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
 	})
 	srv.Use(Middleware())
@@ -559,7 +559,7 @@ func newMockServer(resolver func(ctx context.Context) (interface{}, error)) *han
 		SchemaFunc: func() *ast.Schema {
 			return schema
 		},
-		ComplexityFunc: func(typeName string, fieldName string, childComplexity int, args map[string]interface{}) (int, bool) {
+		ComplexityFunc: func(_ string, _ string, childComplexity int, _ map[string]interface{}) (int, bool) {
 			return childComplexity, true
 		},
 	})
