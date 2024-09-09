@@ -192,7 +192,7 @@ func alwaysTrue() FieldsPredicateFunc {
 }
 
 func alwaysServer() SpanKindSelectorFunc {
-	return func(operationName string) oteltrace.SpanKind {
+	return func(_ string) oteltrace.SpanKind {
 		return oteltrace.SpanKindServer
 	}
 }
