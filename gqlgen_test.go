@@ -90,7 +90,7 @@ func TestExecutedOperationNameAsSpanNameWithOperationNameParameter(t *testing.T)
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+	testSpans(t, spanRecorder, "C", codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -115,7 +115,7 @@ func TestExecutedOperationNameAsSpanNameWithoutOperationNameParameter(t *testing
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -141,7 +141,7 @@ func TestChildSpanFromGlobalTracerWithNamed(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+	testSpans(t, spanRecorder, testQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
