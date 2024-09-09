@@ -89,7 +89,7 @@ func WithCreateSpanFromFields(predicate FieldsPredicateFunc) Option {
 	})
 }
 
-// WithSpanKindSelector allows specifying a custom function that defines the SpanKind based on the name of the operation
+// WithSpanKindSelector allows specifying a custom function that defines the SpanKind based on the name of the operation.
 func WithSpanKindSelector(spanKindSelector SpanKindSelectorFunc) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.SpanKindSelectorFunc = spanKindSelector
