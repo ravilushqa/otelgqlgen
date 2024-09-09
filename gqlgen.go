@@ -39,6 +39,7 @@ type Tracer struct {
 	tracer                      oteltrace.Tracer
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 	shouldCreateSpanFromFields  FieldsPredicateFunc
+	spanKindSelector            SpanKindSelectorFunc
 }
 
 var _ interface {
@@ -63,7 +64,9 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		return next(ctx)
 	}
 
-	ctx, span := a.tracer.Start(ctx, operationName(ctx), oteltrace.WithSpanKind(oteltrace.SpanKindServer))
+	opName := operationName(ctx)
+	spanKind := a.spanKindSelector(opName)
+	ctx, span := a.tracer.Start(ctx, opName, oteltrace.WithSpanKind(spanKind))
 	defer span.End()
 	if !span.IsRecording() {
 		return next(ctx)
@@ -113,9 +116,11 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	if !a.shouldCreateSpanFromFields(fc) {
 		return next(ctx)
 	}
+	name := fc.Field.ObjectDefinition.Name + "/" + fc.Field.Name
+	spanKind := a.spanKindSelector(name)
 	ctx, span := a.tracer.Start(ctx,
-		fc.Field.ObjectDefinition.Name+"/"+fc.Field.Name,
-		oteltrace.WithSpanKind(oteltrace.SpanKindServer),
+		name,
+		oteltrace.WithSpanKind(spanKind),
 	)
 	defer span.End()
 	if !span.IsRecording() {
@@ -161,6 +166,9 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.ShouldCreateSpanFromFields == nil {
 		cfg.ShouldCreateSpanFromFields = alwaysTrue()
 	}
+	if cfg.SpanKindSelectorFunc == nil {
+		cfg.SpanKindSelectorFunc = alwaysServer()
+	}
 
 	tracer := cfg.TracerProvider.Tracer(
 		tracerName,
@@ -171,6 +179,7 @@ func Middleware(opts ...Option) Tracer {
 		tracer:                      tracer,
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
+		spanKindSelector:            cfg.SpanKindSelectorFunc,
 	}
 
 }
@@ -179,6 +188,12 @@ func Middleware(opts ...Option) Tracer {
 func alwaysTrue() FieldsPredicateFunc {
 	return func(_ *graphql.FieldContext) bool {
 		return true
+	}
+}
+
+func alwaysServer() SpanKindSelectorFunc {
+	return func(_ string) oteltrace.SpanKind {
+		return oteltrace.SpanKindServer
 	}
 }
 
