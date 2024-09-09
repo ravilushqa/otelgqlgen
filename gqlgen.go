@@ -100,6 +100,8 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		span.SetStatus(codes.Error, resp.Errors.Error())
 		span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
 		span.SetAttributes(ResolverErrors(resp.Errors)...)
+	} else {
+		span.SetStatus(codes.Ok, "Finished successfully")
 	}
 
 	return resp
@@ -135,6 +137,8 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 		span.SetStatus(codes.Error, errList.Error())
 		span.RecordError(fmt.Errorf("graphql field errors: %v", errList.Error()))
 		span.SetAttributes(ResolverErrors(errList)...)
+	} else {
+		span.SetStatus(codes.Ok, "Finished successfully")
 	}
 
 	return resp, err
