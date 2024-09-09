@@ -72,7 +72,7 @@ func WithRequestVariablesAttributesBuilder(builder RequestVariablesBuilderFunc) 
 // WithoutVariables allows disabling the variables attributes.
 func WithoutVariables() Option {
 	return optionFunc(func(cfg *config) {
-		cfg.RequestVariablesBuilder = func(requestVariables map[string]interface{}) []attribute.KeyValue {
+		cfg.RequestVariablesBuilder = func(_ map[string]interface{}) []attribute.KeyValue {
 			return nil
 		}
 	})
