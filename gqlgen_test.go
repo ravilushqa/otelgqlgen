@@ -65,7 +65,7 @@ func TestChildSpanFromGlobalTracer(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -90,7 +90,7 @@ func TestExecutedOperationNameAsSpanNameWithOperationNameParameter(t *testing.T)
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, "C", codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -115,7 +115,7 @@ func TestExecutedOperationNameAsSpanNameWithoutOperationNameParameter(t *testing
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, "ThisIsOperationName", codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -141,7 +141,7 @@ func TestChildSpanFromGlobalTracerWithNamed(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, testQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -164,7 +164,7 @@ func TestChildSpanFromCustomTracer(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -188,7 +188,7 @@ func TestChildSpanWithComplexityExtension(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -229,7 +229,7 @@ func TestChildSpanWithDropFromFields(t *testing.T) {
 	}
 
 	for _, s := range spanRecorder.Ended() {
-		assert.Equal(t, s.Status().Code, codes.Unset)
+		assert.Equal(t, s.Status().Code, codes.Ok)
 	}
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
@@ -310,7 +310,8 @@ func TestChildSpanFromGlobalTracerWithComplexity(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
 	// second span because it's response span where stored RequestComplexityLimit attribute
 	attributes := spanRecorder.Ended()[1].Attributes()
 	var found bool
@@ -336,7 +337,7 @@ func TestOperationNameInvalidInputJSON(t *testing.T) {
 	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
 	otel.SetTracerProvider(provider)
 
-	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+	srv := newMockServer(func(_ context.Context) (interface{}, error) {
 		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
 	})
 	srv.Use(Middleware())
@@ -374,7 +375,8 @@ func TestVariablesAttributes(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 2)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -412,7 +414,8 @@ func TestVariablesAttributesCustomBuilder(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 2)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -442,7 +445,8 @@ func TestVariablesAttributesDisabled(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
 	spans := spanRecorder.Ended()
 	assert.Len(t, spans[1].Attributes(), 1)
 	assert.Equal(t, attribute.Key("gql.request.query"), spans[1].Attributes()[0].Key)
@@ -469,7 +473,7 @@ func TestNilResponse(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindServer)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
 
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
@@ -487,7 +491,6 @@ func TestWithSpanKindSelector(t *testing.T) {
 		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
 	})
 	srv.Use(Middleware(WithSpanKindSelector(func(operationName string) trace.SpanKind {
-		fmt.Printf("operationName: %s\n", operationName)
 		if operationName == "nameless-operation" || operationName == "name/name" {
 			return trace.SpanKindClient
 		}
@@ -499,7 +502,7 @@ func TestWithSpanKindSelector(t *testing.T) {
 
 	srv.ServeHTTP(w, r)
 
-	testSpans(t, spanRecorder, namelessQueryName, codes.Unset, trace.SpanKindClient)
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindClient)
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
@@ -559,7 +562,7 @@ func newMockServer(resolver func(ctx context.Context) (interface{}, error)) *han
 		SchemaFunc: func() *ast.Schema {
 			return schema
 		},
-		ComplexityFunc: func(typeName string, fieldName string, childComplexity int, args map[string]interface{}) (int, bool) {
+		ComplexityFunc: func(_ string, _ string, childComplexity int, _ map[string]interface{}) (int, bool) {
 			return childComplexity, true
 		},
 	})
@@ -641,7 +644,7 @@ func testSpans(t *testing.T, spanRecorder *tracetest.SpanRecorder, spanName stri
 	}
 
 	for _, s := range spanRecorder.Ended() {
-		assert.Equal(t, s.Status().Code, spanCode)
+		assert.Equal(t, spanCode, s.Status().Code)
 		assert.Equal(t, spanKind, s.SpanKind())
 	}
 }

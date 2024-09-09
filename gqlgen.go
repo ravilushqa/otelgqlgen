@@ -101,8 +101,10 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	resp := next(ctx)
 	if resp != nil && len(resp.Errors) > 0 {
 		span.SetStatus(codes.Error, resp.Errors.Error())
-		span.RecordError(fmt.Errorf(resp.Errors.Error()))
+		span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
 		span.SetAttributes(ResolverErrors(resp.Errors)...)
+	} else {
+		span.SetStatus(codes.Ok, "Finished successfully")
 	}
 
 	return resp
@@ -138,8 +140,10 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	errList := graphql.GetFieldErrors(ctx, fc)
 	if len(errList) != 0 {
 		span.SetStatus(codes.Error, errList.Error())
-		span.RecordError(fmt.Errorf(errList.Error()))
+		span.RecordError(fmt.Errorf("graphql field errors: %v", errList.Error()))
 		span.SetAttributes(ResolverErrors(errList)...)
+	} else {
+		span.SetStatus(codes.Ok, "Finished successfully")
 	}
 
 	return resp, err
@@ -182,7 +186,7 @@ func Middleware(opts ...Option) Tracer {
 
 // alwaysTrue returns a FieldsPredicateFunc that always returns true.
 func alwaysTrue() FieldsPredicateFunc {
-	return func(ctx *graphql.FieldContext) bool {
+	return func(_ *graphql.FieldContext) bool {
 		return true
 	}
 }
