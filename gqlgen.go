@@ -17,6 +17,9 @@ package otelgqlgen
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"reflect"
+	"strconv"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -24,6 +27,7 @@ import (
 	otelcontrib "go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -40,6 +44,7 @@ type Tracer struct {
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 	shouldCreateSpanFromFields  FieldsPredicateFunc
 	spanKindSelector            SpanKindSelectorFunc
+	setHTTPStatusCode           bool
 }
 
 var _ interface {
@@ -49,24 +54,24 @@ var _ interface {
 } = Tracer{}
 
 // ExtensionName returns the extension name.
-func (a Tracer) ExtensionName() string {
+func (gqlTracer Tracer) ExtensionName() string {
 	return extensionName
 }
 
 // Validate checks if the extension is configured properly.
-func (a Tracer) Validate(_ graphql.ExecutableSchema) error {
+func (gqlTracer Tracer) Validate(_ graphql.ExecutableSchema) error {
 	return nil
 }
 
 // InterceptResponse intercepts the incoming request.
-func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
+func (gqlTracer Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
 	if !graphql.HasOperationContext(ctx) {
 		return next(ctx)
 	}
 
 	opName := operationName(ctx)
-	spanKind := a.spanKindSelector(opName)
-	ctx, span := a.tracer.Start(ctx, opName, oteltrace.WithSpanKind(spanKind))
+	spanKind := gqlTracer.spanKindSelector(opName)
+	ctx, span := gqlTracer.tracer.Start(ctx, opName, oteltrace.WithSpanKind(spanKind))
 	defer span.End()
 	if !span.IsRecording() {
 		return next(ctx)
@@ -77,7 +82,7 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	span.SetAttributes(
 		RequestQuery(oc.RawQuery),
 	)
-	complexityExtension := a.complexityExtensionName
+	complexityExtension := gqlTracer.complexityExtensionName
 	if complexityExtension == "" {
 		complexityExtension = complexityLimit
 	}
@@ -94,31 +99,53 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 		)
 	}
 
-	if a.requestVariablesBuilderFunc != nil {
-		span.SetAttributes(a.requestVariablesBuilderFunc(oc.Variables)...)
+	if gqlTracer.requestVariablesBuilderFunc != nil {
+		span.SetAttributes(gqlTracer.requestVariablesBuilderFunc(oc.Variables)...)
 	}
 
 	resp := next(ctx)
-	if resp != nil && len(resp.Errors) > 0 {
-		span.SetStatus(codes.Error, resp.Errors.Error())
-		span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
-		span.SetAttributes(ResolverErrors(resp.Errors)...)
-	} else {
-		span.SetStatus(codes.Ok, "Finished successfully")
+	if gqlTracer.setHTTPStatusCode {
+		var statusCode = http.StatusOK
+		if resp != nil && len(resp.Errors) > 0 {
+			statusCode = http.StatusInternalServerError
+			span.SetStatus(codes.Error, resp.Errors.Error())
+			span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
+			span.SetAttributes(ResolverErrors(resp.Errors)...)
+			if resp.Errors[0].Extensions["code"] != nil {
+				var code = resp.Errors[0].Extensions["code"]
+				if reflect.TypeOf(code).Kind() == reflect.Int {
+					statusCode = code.(int)
+				} else if reflect.TypeOf(code).Kind() == reflect.Int32 {
+					statusCode = int(code.(int32))
+				} else if reflect.TypeOf(code).Kind() == reflect.String {
+					status, err := strconv.Atoi(code.(string))
+					if err == nil {
+						statusCode = status
+					}
+				}
+			}
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		// Stable: https://opentelemetry.io/docs/specs/semconv/http/http-spans/#common-attributes
+		span.SetAttributes(semconv.HTTPResponseStatusCode(statusCode))
+		// Experimental: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md#common-attributes
+		span.SetAttributes(semconv.HTTPStatusCode(statusCode)) // nolint:staticcheck
 	}
 
 	return resp
 }
 
 // InterceptField intercepts the incoming request.
-func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
+func (gqlTracer Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (interface{}, error) {
 	fc := graphql.GetFieldContext(ctx)
-	if !a.shouldCreateSpanFromFields(fc) {
+	if !gqlTracer.shouldCreateSpanFromFields(fc) {
 		return next(ctx)
 	}
 	name := fc.Field.ObjectDefinition.Name + "/" + fc.Field.Name
-	spanKind := a.spanKindSelector(name)
-	ctx, span := a.tracer.Start(ctx,
+	spanKind := gqlTracer.spanKindSelector(name)
+	ctx, span := gqlTracer.tracer.Start(ctx,
 		name,
 		oteltrace.WithSpanKind(spanKind),
 	)
@@ -138,13 +165,33 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	resp, err := next(ctx)
 
 	errList := graphql.GetFieldErrors(ctx, fc)
+	var statusCode = http.StatusOK
 	if len(errList) != 0 {
+		statusCode = http.StatusInternalServerError
 		span.SetStatus(codes.Error, errList.Error())
 		span.RecordError(fmt.Errorf("graphql field errors: %v", errList.Error()))
 		span.SetAttributes(ResolverErrors(errList)...)
+		if errList[0].Extensions["code"] != nil {
+			var code = errList[0].Extensions["code"]
+			if reflect.TypeOf(code).Kind() == reflect.Int {
+				statusCode = code.(int)
+			} else if reflect.TypeOf(code).Kind() == reflect.Int32 {
+				statusCode = int(code.(int32))
+			} else if reflect.TypeOf(code).Kind() == reflect.String {
+				status, err := strconv.Atoi(code.(string))
+				if err == nil {
+					statusCode = status
+				}
+			}
+		}
 	} else {
 		span.SetStatus(codes.Ok, "Finished successfully")
 	}
+
+	// Stable: https://opentelemetry.io/docs/specs/semconv/http/http-spans/#common-attributes
+	span.SetAttributes(semconv.HTTPResponseStatusCode(statusCode))
+	// Experimental: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.20.0/specification/trace/semantic_conventions/http.md#common-attributes
+	span.SetAttributes(semconv.HTTPStatusCode(statusCode)) // nolint:staticcheck
 
 	return resp, err
 }
@@ -180,6 +227,7 @@ func Middleware(opts ...Option) Tracer {
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
 		spanKindSelector:            cfg.SpanKindSelectorFunc,
+		setHTTPStatusCode:           cfg.SetHTTPStatusCode,
 	}
 
 }
