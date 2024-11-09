@@ -5,7 +5,7 @@ go 1.22.5
 toolchain go1.23.3
 
 require (
-	github.com/99designs/gqlgen v0.17.55
+	github.com/99designs/gqlgen v0.17.56
 	github.com/stretchr/testify v1.9.0
 	github.com/vektah/gqlparser/v2 v2.5.19
 	go.opentelemetry.io/contrib v1.32.0
@@ -19,6 +19,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
