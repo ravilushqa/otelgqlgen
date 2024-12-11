@@ -20,6 +20,8 @@ github.com/99designs/gqlgen v0.17.58 h1:IqoOcSLMk6LnKvLECkRNPP5Z/jApXYvnzm+qvGkY
 github.com/99designs/gqlgen v0.17.58/go.mod h1:vQJzWXyGya2TYL7cig1G4OaCQzyck031MgYBlUwaI9I=
 github.com/99designs/gqlgen v0.17.59 h1:1hvrBXMlHrnAFZIIHtT049Y2FnlntPESuwRi1SygLqQ=
 github.com/99designs/gqlgen v0.17.59/go.mod h1:vQJzWXyGya2TYL7cig1G4OaCQzyck031MgYBlUwaI9I=
+github.com/99designs/gqlgen v0.17.60 h1:xxl7kQDCNw79itzWQtCUSXgkovCyq9r+ogSXfZpKPYM=
+github.com/99designs/gqlgen v0.17.60/go.mod h1:vQJzWXyGya2TYL7cig1G4OaCQzyck031MgYBlUwaI9I=
 github.com/agnivade/levenshtein v1.1.1 h1:QY8M92nrzkmr798gCo3kmMyqXFzdQVpxLlGPRBij0P8=
 github.com/agnivade/levenshtein v1.1.1/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVbJomOvKkmgYbo=
 github.com/agnivade/levenshtein v1.2.0 h1:U9L4IOT0Y3i0TIlUIDJ7rVUziKi/zPbrJGaFrtYH3SY=
