@@ -5,7 +5,7 @@ go 1.22.5
 toolchain go1.23.4
 
 require (
-	github.com/99designs/gqlgen v0.17.60
+	github.com/99designs/gqlgen v0.17.61
 	github.com/stretchr/testify v1.10.0
 	github.com/vektah/gqlparser/v2 v2.5.20
 	go.opentelemetry.io/contrib v1.33.0
