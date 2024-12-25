@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/99designs/gqlgen v0.17.61
 	github.com/stretchr/testify v1.10.0
-	github.com/vektah/gqlparser/v2 v2.5.20
+	github.com/vektah/gqlparser/v2 v2.5.21
 	go.opentelemetry.io/contrib v1.33.0
 	go.opentelemetry.io/otel v1.33.0
 	go.opentelemetry.io/otel/sdk v1.33.0
