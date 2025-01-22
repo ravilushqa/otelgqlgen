@@ -41,7 +41,6 @@ type Tracer struct {
 	requestVariablesBuilderFunc RequestVariablesBuilderFunc
 	shouldCreateSpanFromFields  FieldsPredicateFunc
 	spanKindSelector            SpanKindSelectorFunc
-	propagator                  propagation.TextMapPropagator
 }
 
 var _ interface {
@@ -68,7 +67,7 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 
 	opName := operationName(ctx)
 	spanKind := a.spanKindSelector(opName)
-	ctx = a.propagator.Extract(ctx, propagation.HeaderCarrier(graphql.GetOperationContext(ctx).Headers))
+	ctx = otel.GetTextMapPropagator().Extract(ctx, propagation.HeaderCarrier(graphql.GetOperationContext(ctx).Headers))
 	ctx, span := a.tracer.Start(ctx, opName, oteltrace.WithSpanKind(spanKind))
 	defer span.End()
 	if !span.IsRecording() {
@@ -183,7 +182,6 @@ func Middleware(opts ...Option) Tracer {
 		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
 		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
 		spanKindSelector:            cfg.SpanKindSelectorFunc,
-		propagator:                  otel.GetTextMapPropagator(),
 	}
 
 }
