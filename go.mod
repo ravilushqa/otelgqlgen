@@ -1,11 +1,11 @@
 module github.com/ravilushqa/otelgqlgen
 
-go 1.22.5
+go 1.22.12
 
 toolchain go1.24.0
 
 require (
-	github.com/99designs/gqlgen v0.17.64
+	github.com/99designs/gqlgen v0.17.65
 	github.com/stretchr/testify v1.10.0
 	github.com/vektah/gqlparser/v2 v2.5.22
 	go.opentelemetry.io/contrib v1.34.0
