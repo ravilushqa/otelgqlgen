@@ -35,6 +35,7 @@ const (
 	resolverFieldKey              = attribute.Key("gql.resolver.field")
 	resolverAliasKey              = attribute.Key("gql.resolver.alias")
 	resolverHasErrorKey           = attribute.Key("gql.resolver.hasError")
+	resolverErrorCountKey         = attribute.Key("gql.resolver.errorCount")
 )
 
 // RequestQuery sets the request query.
@@ -103,7 +104,7 @@ func ResolverErrors(errorList gqlerror.List) []attribute.KeyValue {
 		errors = append(
 			errors,
 			resolverHasErrorKey.Bool(true),
-			resolverHasErrorKey.Int64(int64(len(errorList))),
+			resolverErrorCountKey.Int64(int64(len(errorList))),
 			attribute.String(fmt.Sprintf("%s.%d.message", resolverErrorPrefix, idx), err.Error()),
 			attribute.String(fmt.Sprintf("%s.%d.kind", resolverErrorPrefix, idx), fmt.Sprintf("%T", err)),
 		)

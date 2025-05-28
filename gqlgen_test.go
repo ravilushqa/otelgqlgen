@@ -562,7 +562,7 @@ func newMockServer(resolver func(ctx context.Context) (interface{}, error)) *han
 		SchemaFunc: func() *ast.Schema {
 			return schema
 		},
-		ComplexityFunc: func(_ string, _ string, childComplexity int, _ map[string]interface{}) (int, bool) {
+		ComplexityFunc: func(_ context.Context, _ string, _ string, childComplexity int, _ map[string]any) (int, bool) {
 			return childComplexity, true
 		},
 	})
