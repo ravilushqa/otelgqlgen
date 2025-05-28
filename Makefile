@@ -35,11 +35,13 @@ TOOLS = $(CURDIR)/.tools
 $(TOOLS):
 	@mkdir -p $@
 $(TOOLS)/%: | $(TOOLS)
+	rm -f $@ # Remove existing binary
 	cd $(TOOLS_MOD_DIR) && \
-	$(GO) build -o $@ $(PACKAGE)
+	GOTOOLCHAIN=go1.24.3 $(GO) install $(PACKAGE) && \
+	mv $(shell go env GOPATH)/bin/golangci-lint $@
 
 GOLANGCI_LINT = $(TOOLS)/golangci-lint
-$(TOOLS)/golangci-lint: PACKAGE=github.com/golangci/golangci-lint/cmd/golangci-lint
+$(TOOLS)/golangci-lint: PACKAGE=github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 .PHONY: tools
 tools: $(GOLANGCI_LINT)

@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -43,7 +44,10 @@ func main() {
 
 	initTracer()
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{Tracer: tracer}}))
+	es := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{Tracer: tracer}})
+	srv := handler.New(es)
+	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.GET{})
 	srv.Use(otelgqlgen.Middleware())
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
