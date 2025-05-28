@@ -28,19 +28,6 @@ TIMEOUT = 60
 precommit: license-check lint build examples test-default
 ci: precommit check-clean-work-tree test-coverage
 
-# Tools
-
-TOOLS = $(CURDIR)/.tools
-
-$(TOOLS):
-	@mkdir -p $@
-$(TOOLS)/%: | $(TOOLS)
-	cd $(TOOLS_MOD_DIR) && \
-	$(GO) build -o $@ $(PACKAGE)
-
-GOLANGCI_LINT = $(TOOLS)/golangci-lint
-$(TOOLS)/golangci-lint: PACKAGE=github.com/golangci/golangci-lint/cmd/golangci-lint
-
 .PHONY: tools
 tools: $(GOLANGCI_LINT)
 
@@ -110,12 +97,12 @@ test-coverage:
 	sed -i.bak -e '2,$$ { /^mode: /d; }' coverage.txt
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT)
+lint:
 	set -e; for dir in $(ALL_GO_MOD_DIRS); do \
 	  echo "golangci-lint in $${dir}"; \
 	  (cd "$${dir}" && \
-	    $(GOLANGCI_LINT) run --fix && \
-	    $(GOLANGCI_LINT) run); \
+	    go tool golangci-lint run --fix && \
+	    go tool golangci-lint run); \
 	done
 
 .PHONY: license-check
