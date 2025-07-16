@@ -506,6 +506,166 @@ func TestWithSpanKindSelector(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
+func TestChildSpanWithInterceptFieldsResultHandler(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithInterceptFieldsResultHandlerFunc(func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error) {
+		// Set custom span attribute
+		span.SetAttributes(attribute.String("custom.field.result", "intercepted"))
+
+		if len(fieldErrList) != 0 {
+			span.SetStatus(codes.Error, fieldErrList.Error())
+			span.RecordError(fmt.Errorf("graphql field errors: %v", fieldErrList.Error()))
+			span.SetAttributes(ResolverErrors(fieldErrList)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		return resp, respErr
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
+	// Verify custom attribute was set on field span (first span)
+	spans := spanRecorder.Ended()
+	fieldSpan := spans[0]
+	attributes := fieldSpan.Attributes()
+	var foundCustomAttribute bool
+	for _, a := range attributes {
+		if a.Key == "custom.field.result" {
+			foundCustomAttribute = true
+			assert.Equal(t, "intercepted", a.Value.AsString())
+		}
+	}
+	assert.True(t, foundCustomAttribute, "custom field result attribute should be found")
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestChildSpanWithInterceptFieldsResultHandlerWithError(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServerError(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithInterceptFieldsResultHandlerFunc(func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error) {
+		// Set custom span attribute
+		span.SetAttributes(attribute.String("custom.field.error", "error_intercepted"))
+
+		if len(fieldErrList) != 0 {
+			span.SetStatus(codes.Error, fieldErrList.Error())
+			span.RecordError(fmt.Errorf("graphql field errors: %v", fieldErrList.Error()))
+			span.SetAttributes(ResolverErrors(fieldErrList)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		return resp, respErr
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Error, trace.SpanKindServer)
+
+	// Verify custom attribute was set on field span (first span)
+	spans := spanRecorder.Ended()
+	fieldSpan := spans[0]
+	attributes := fieldSpan.Attributes()
+	var foundCustomAttribute bool
+	for _, a := range attributes {
+		if a.Key == "custom.field.error" {
+			foundCustomAttribute = true
+			assert.Equal(t, "error_intercepted", a.Value.AsString())
+		}
+	}
+	assert.True(t, foundCustomAttribute, "custom field error attribute should be found")
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestChildSpanWithInterceptFieldsResultHandlerModifyResponse(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithInterceptFieldsResultHandlerFunc(func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error) {
+		// Set custom span attributes based on response
+		if gqlResp, ok := resp.(*graphql.Response); ok && gqlResp != nil {
+			span.SetAttributes(attribute.String("custom.response.type", "graphql_response"))
+			span.SetAttributes(attribute.Bool("custom.response.has_data", len(gqlResp.Data) > 0))
+		}
+
+		if len(fieldErrList) != 0 {
+			span.SetStatus(codes.Error, fieldErrList.Error())
+			span.RecordError(fmt.Errorf("graphql field errors: %v", fieldErrList.Error()))
+			span.SetAttributes(ResolverErrors(fieldErrList)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		return resp, respErr
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
+	// Verify custom attributes were set on field span (first span)
+	spans := spanRecorder.Ended()
+	fieldSpan := spans[0]
+	attributes := fieldSpan.Attributes()
+
+	var foundResponseType, foundHasData bool
+	for _, a := range attributes {
+		if a.Key == "custom.response.type" {
+			foundResponseType = true
+			assert.Equal(t, "graphql_response", a.Value.AsString())
+		}
+		if a.Key == "custom.response.has_data" {
+			foundHasData = true
+			assert.Equal(t, true, a.Value.AsBool())
+		}
+	}
+
+	assert.True(t, foundResponseType, "custom response type attribute should be found")
+	assert.True(t, foundHasData, "custom response has_data attribute should be found")
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
 // newMockServer provides a server for use in resolver tests that isn't relying on generated code.
 // It isn't a perfect reproduction of a generated server, but it aims to be good enough to
 // test the handler package without relying on codegen.

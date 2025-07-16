@@ -20,10 +20,12 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 
 	otelcontrib "go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -35,11 +37,13 @@ const (
 
 // Tracer is a GraphQL extension that traces GraphQL requests.
 type Tracer struct {
-	complexityExtensionName     string
-	tracer                      oteltrace.Tracer
-	requestVariablesBuilderFunc RequestVariablesBuilderFunc
-	shouldCreateSpanFromFields  FieldsPredicateFunc
-	spanKindSelector            SpanKindSelectorFunc
+	complexityExtensionName            string
+	tracer                             oteltrace.Tracer
+	requestVariablesBuilderFunc        RequestVariablesBuilderFunc
+	shouldCreateSpanFromFields         FieldsPredicateFunc
+	spanKindSelector                   SpanKindSelectorFunc
+	interceptResponseResultHandlerFunc InterceptResponseResultHandlerFunc
+	interceptFieldsResultHanderFunc    InterceptFieldsResultHanderFunc
 }
 
 var _ interface {
@@ -58,7 +62,6 @@ func (a Tracer) Validate(_ graphql.ExecutableSchema) error {
 	return nil
 }
 
-// InterceptResponse intercepts the incoming request.
 func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
 	if !graphql.HasOperationContext(ctx) {
 		return next(ctx)
@@ -99,15 +102,8 @@ func (a Tracer) InterceptResponse(ctx context.Context, next graphql.ResponseHand
 	}
 
 	resp := next(ctx)
-	if resp != nil && len(resp.Errors) > 0 {
-		span.SetStatus(codes.Error, resp.Errors.Error())
-		span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
-		span.SetAttributes(ResolverErrors(resp.Errors)...)
-	} else {
-		span.SetStatus(codes.Ok, "Finished successfully")
-	}
 
-	return resp
+	return a.interceptResponseResultHandlerFunc(resp, span)
 }
 
 // InterceptField intercepts the incoming request.
@@ -136,17 +132,9 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	span.SetAttributes(ResolverArgs(fc.Field.Arguments)...)
 
 	resp, err := next(ctx)
-
 	errList := graphql.GetFieldErrors(ctx, fc)
-	if len(errList) != 0 {
-		span.SetStatus(codes.Error, errList.Error())
-		span.RecordError(fmt.Errorf("graphql field errors: %v", errList.Error()))
-		span.SetAttributes(ResolverErrors(errList)...)
-	} else {
-		span.SetStatus(codes.Ok, "Finished successfully")
-	}
 
-	return resp, err
+	return a.interceptFieldsResultHanderFunc(resp, err, errList, span)
 }
 
 // Middleware sets up a handler to start tracing the incoming
@@ -169,6 +157,12 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.SpanKindSelectorFunc == nil {
 		cfg.SpanKindSelectorFunc = alwaysServer()
 	}
+	if cfg.InterceptResponseResultHandlerFunc == nil {
+		cfg.InterceptResponseResultHandlerFunc = defaultInterceptResponseResultHandler()
+	}
+	if cfg.InterceptFieldsResultHanderFunc == nil {
+		cfg.InterceptFieldsResultHanderFunc = defaultInterceptFieldsResultHander()
+	}
 
 	tracer := cfg.TracerProvider.Tracer(
 		tracerName,
@@ -176,10 +170,12 @@ func Middleware(opts ...Option) Tracer {
 	)
 
 	return Tracer{
-		tracer:                      tracer,
-		requestVariablesBuilderFunc: cfg.RequestVariablesBuilder,
-		shouldCreateSpanFromFields:  cfg.ShouldCreateSpanFromFields,
-		spanKindSelector:            cfg.SpanKindSelectorFunc,
+		tracer:                             tracer,
+		requestVariablesBuilderFunc:        cfg.RequestVariablesBuilder,
+		shouldCreateSpanFromFields:         cfg.ShouldCreateSpanFromFields,
+		spanKindSelector:                   cfg.SpanKindSelectorFunc,
+		interceptResponseResultHandlerFunc: cfg.InterceptResponseResultHandlerFunc,
+		interceptFieldsResultHanderFunc:    cfg.InterceptFieldsResultHanderFunc,
 	}
 
 }
@@ -194,6 +190,33 @@ func alwaysTrue() FieldsPredicateFunc {
 func alwaysServer() SpanKindSelectorFunc {
 	return func(_ string) oteltrace.SpanKind {
 		return oteltrace.SpanKindServer
+	}
+}
+
+func defaultInterceptResponseResultHandler() InterceptResponseResultHandlerFunc {
+	return func(resp *graphql.Response, span trace.Span) *graphql.Response {
+		if resp != nil && len(resp.Errors) > 0 {
+			span.SetStatus(codes.Error, resp.Errors.Error())
+			span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
+			span.SetAttributes(ResolverErrors(resp.Errors)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+		return resp
+	}
+}
+
+func defaultInterceptFieldsResultHander() InterceptFieldsResultHanderFunc {
+	return func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error) {
+		if len(fieldErrList) != 0 {
+			span.SetStatus(codes.Error, fieldErrList.Error())
+			span.RecordError(fmt.Errorf("graphql field errors: %v", fieldErrList.Error()))
+			span.SetAttributes(ResolverErrors(fieldErrList)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		return resp, respErr
 	}
 }
 
