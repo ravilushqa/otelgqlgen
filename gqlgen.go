@@ -25,7 +25,6 @@ import (
 	otelcontrib "go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -194,7 +193,7 @@ func alwaysServer() SpanKindSelectorFunc {
 }
 
 func defaultInterceptResponseResultHandler() InterceptResponseResultHandlerFunc {
-	return func(resp *graphql.Response, span trace.Span) *graphql.Response {
+	return func(resp *graphql.Response, span oteltrace.Span) *graphql.Response {
 		if resp != nil && len(resp.Errors) > 0 {
 			span.SetStatus(codes.Error, resp.Errors.Error())
 			span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
@@ -207,7 +206,7 @@ func defaultInterceptResponseResultHandler() InterceptResponseResultHandlerFunc 
 }
 
 func defaultInterceptFieldsResultHandler() InterceptFieldsResultHandlerFunc {
-	return func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error) {
+	return func(resp interface{}, respErr error, fieldErrList gqlerror.List, span oteltrace.Span) (interface{}, error) {
 		if len(fieldErrList) != 0 {
 			span.SetStatus(codes.Error, fieldErrList.Error())
 			span.RecordError(fmt.Errorf("graphql field errors: %v", fieldErrList.Error()))
