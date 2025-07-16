@@ -34,7 +34,7 @@ type config struct {
 	ShouldCreateSpanFromFields         FieldsPredicateFunc
 	SpanKindSelectorFunc               SpanKindSelectorFunc
 	InterceptResponseResultHandlerFunc InterceptResponseResultHandlerFunc
-	InterceptFieldsResultHanderFunc    InterceptFieldsResultHanderFunc
+	InterceptFieldsResultHandlerFunc   InterceptFieldsResultHandlerFunc
 }
 
 // RequestVariablesBuilderFunc is the signature of the function
@@ -45,9 +45,9 @@ type RequestVariablesBuilderFunc func(requestVariables map[string]interface{}) [
 // used to intercept and handle GraphQL response results before they are returned.
 type InterceptResponseResultHandlerFunc func(resp *graphql.Response, span trace.Span) *graphql.Response
 
-// InterceptFieldsResultHanderFunc is the signature of the function
+// InterceptFieldsResultHandlerFunc is the signature of the function
 // used to intercept and handle GraphQL field-level results and errors during execution.
-type InterceptFieldsResultHanderFunc func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error)
+type InterceptFieldsResultHandlerFunc func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error)
 
 // Option specifies instrumentation configuration options.
 type Option interface {
@@ -117,8 +117,8 @@ func WithInterceptResponseResultHandlerFunc(handler InterceptResponseResultHandl
 
 // WithInterceptFieldsResultHandlerFunc allows specifying a custom function
 // to intercept and handle GraphQL field-level results and errors during execution.
-func WithInterceptFieldsResultHandlerFunc(handler InterceptFieldsResultHanderFunc) Option {
+func WithInterceptFieldsResultHandlerFunc(handler InterceptFieldsResultHandlerFunc) Option {
 	return optionFunc(func(cfg *config) {
-		cfg.InterceptFieldsResultHanderFunc = handler
+		cfg.InterceptFieldsResultHandlerFunc = handler
 	})
 }

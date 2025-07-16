@@ -43,7 +43,7 @@ type Tracer struct {
 	shouldCreateSpanFromFields         FieldsPredicateFunc
 	spanKindSelector                   SpanKindSelectorFunc
 	interceptResponseResultHandlerFunc InterceptResponseResultHandlerFunc
-	interceptFieldsResultHanderFunc    InterceptFieldsResultHanderFunc
+	interceptFieldsResultHandlerFunc   InterceptFieldsResultHandlerFunc
 }
 
 var _ interface {
@@ -134,7 +134,7 @@ func (a Tracer) InterceptField(ctx context.Context, next graphql.Resolver) (inte
 	resp, err := next(ctx)
 	errList := graphql.GetFieldErrors(ctx, fc)
 
-	return a.interceptFieldsResultHanderFunc(resp, err, errList, span)
+	return a.interceptFieldsResultHandlerFunc(resp, err, errList, span)
 }
 
 // Middleware sets up a handler to start tracing the incoming
@@ -160,8 +160,8 @@ func Middleware(opts ...Option) Tracer {
 	if cfg.InterceptResponseResultHandlerFunc == nil {
 		cfg.InterceptResponseResultHandlerFunc = defaultInterceptResponseResultHandler()
 	}
-	if cfg.InterceptFieldsResultHanderFunc == nil {
-		cfg.InterceptFieldsResultHanderFunc = defaultInterceptFieldsResultHander()
+	if cfg.InterceptFieldsResultHandlerFunc == nil {
+		cfg.InterceptFieldsResultHandlerFunc = defaultInterceptFieldsResultHandler()
 	}
 
 	tracer := cfg.TracerProvider.Tracer(
@@ -175,7 +175,7 @@ func Middleware(opts ...Option) Tracer {
 		shouldCreateSpanFromFields:         cfg.ShouldCreateSpanFromFields,
 		spanKindSelector:                   cfg.SpanKindSelectorFunc,
 		interceptResponseResultHandlerFunc: cfg.InterceptResponseResultHandlerFunc,
-		interceptFieldsResultHanderFunc:    cfg.InterceptFieldsResultHanderFunc,
+		interceptFieldsResultHandlerFunc:   cfg.InterceptFieldsResultHandlerFunc,
 	}
 
 }
@@ -206,7 +206,7 @@ func defaultInterceptResponseResultHandler() InterceptResponseResultHandlerFunc 
 	}
 }
 
-func defaultInterceptFieldsResultHander() InterceptFieldsResultHanderFunc {
+func defaultInterceptFieldsResultHandler() InterceptFieldsResultHandlerFunc {
 	return func(resp interface{}, respErr error, fieldErrList gqlerror.List, span trace.Span) (interface{}, error) {
 		if len(fieldErrList) != 0 {
 			span.SetStatus(codes.Error, fieldErrList.Error())

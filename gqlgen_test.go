@@ -666,6 +666,184 @@ func TestChildSpanWithInterceptFieldsResultHandlerModifyResponse(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
+func TestChildSpanWithInterceptResponseResultHandler(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithInterceptResponseResultHandlerFunc(func(resp *graphql.Response, span trace.Span) *graphql.Response {
+		// Set custom span attribute
+		span.SetAttributes(attribute.String("custom.response.result", "intercepted"))
+
+		if resp != nil && len(resp.Errors) > 0 {
+			span.SetStatus(codes.Error, resp.Errors.Error())
+			span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
+			span.SetAttributes(ResolverErrors(resp.Errors)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		return resp
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
+	// Verify custom attribute was set on response span (second span)
+	spans := spanRecorder.Ended()
+	responseSpan := spans[1]
+	attributes := responseSpan.Attributes()
+	var foundCustomAttribute bool
+	for _, a := range attributes {
+		if a.Key == "custom.response.result" {
+			foundCustomAttribute = true
+			assert.Equal(t, "intercepted", a.Value.AsString())
+		}
+	}
+	assert.True(t, foundCustomAttribute, "custom response result attribute should be found")
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestChildSpanWithInterceptResponseResultHandlerWithError(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServerError(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithInterceptResponseResultHandlerFunc(func(resp *graphql.Response, span trace.Span) *graphql.Response {
+		// Set custom span attribute
+		span.SetAttributes(attribute.String("custom.response.error", "error_intercepted"))
+
+		if resp != nil && len(resp.Errors) > 0 {
+			span.SetStatus(codes.Error, resp.Errors.Error())
+			span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
+			span.SetAttributes(ResolverErrors(resp.Errors)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		return resp
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Error, trace.SpanKindServer)
+
+	// Verify custom attribute was set on response span (second span)
+	spans := spanRecorder.Ended()
+	responseSpan := spans[1]
+	attributes := responseSpan.Attributes()
+	var foundCustomAttribute bool
+	for _, a := range attributes {
+		if a.Key == "custom.response.error" {
+			foundCustomAttribute = true
+			assert.Equal(t, "error_intercepted", a.Value.AsString())
+		}
+	}
+	assert.True(t, foundCustomAttribute, "custom response error attribute should be found")
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
+func TestChildSpanWithInterceptResponseResultHandlerModifyResponse(t *testing.T) {
+	spanRecorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
+	otel.SetTracerProvider(provider)
+
+	srv := newMockServer(func(ctx context.Context) (interface{}, error) {
+		span := trace.SpanContextFromContext(ctx)
+		if !span.IsValid() {
+			t.Fatalf("invalid span wrapping handler: %#v", span)
+		}
+		return &graphql.Response{Data: []byte(`{"name":"test"}`)}, nil
+	})
+	srv.Use(Middleware(WithInterceptResponseResultHandlerFunc(func(resp *graphql.Response, span trace.Span) *graphql.Response {
+		// Set custom span attributes based on response
+		if resp != nil {
+			span.SetAttributes(attribute.String("custom.response.type", "graphql_response"))
+			span.SetAttributes(attribute.Bool("custom.response.has_data", len(resp.Data) > 0))
+			span.SetAttributes(attribute.Int("custom.response.data_length", len(resp.Data)))
+		}
+
+		if resp != nil && len(resp.Errors) > 0 {
+			span.SetStatus(codes.Error, resp.Errors.Error())
+			span.RecordError(fmt.Errorf("graphql response errors: %v", resp.Errors.Error()))
+			span.SetAttributes(ResolverErrors(resp.Errors)...)
+		} else {
+			span.SetStatus(codes.Ok, "Finished successfully")
+		}
+
+		// Modify response by adding custom extension
+		if resp != nil {
+			if resp.Extensions == nil {
+				resp.Extensions = make(map[string]interface{})
+			}
+			resp.Extensions["custom_interceptor"] = "response_modified"
+		}
+
+		return resp
+	})))
+
+	r := httptest.NewRequest("GET", "/foo?query={name}", nil)
+	w := httptest.NewRecorder()
+
+	srv.ServeHTTP(w, r)
+
+	testSpans(t, spanRecorder, namelessQueryName, codes.Ok, trace.SpanKindServer)
+
+	// Verify custom attributes were set on response span (second span)
+	spans := spanRecorder.Ended()
+	responseSpan := spans[1]
+	attributes := responseSpan.Attributes()
+
+	var foundResponseType, foundHasData, foundDataLength bool
+	for _, a := range attributes {
+		if a.Key == "custom.response.type" {
+			foundResponseType = true
+			assert.Equal(t, "graphql_response", a.Value.AsString())
+		}
+		if a.Key == "custom.response.has_data" {
+			foundHasData = true
+			assert.Equal(t, true, a.Value.AsBool())
+		}
+		if a.Key == "custom.response.data_length" {
+			foundDataLength = true
+			assert.Greater(t, a.Value.AsInt64(), int64(0))
+		}
+	}
+
+	assert.True(t, foundResponseType, "custom response type attribute should be found")
+	assert.True(t, foundHasData, "custom response has_data attribute should be found")
+	assert.True(t, foundDataLength, "custom response data_length attribute should be found")
+
+	// Verify response was modified
+	assert.Contains(t, w.Body.String(), "custom_interceptor")
+	assert.Contains(t, w.Body.String(), "response_modified")
+
+	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
+}
+
 // newMockServer provides a server for use in resolver tests that isn't relying on generated code.
 // It isn't a perfect reproduction of a generated server, but it aims to be good enough to
 // test the handler package without relying on codegen.
