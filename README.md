@@ -49,6 +49,8 @@ otelgqlgen provides several options to customize the tracing behavior:
 - `WithRequestVariablesAttributesBuilder(builder)`: Specifies a custom function to build the attributes for the request variables.
 - `WithoutVariables()`: Disables the variables attributes.
 - `WithCreateSpanFromFields(predicate)`: Specifies a custom function to control whether a span should be created based on the GraphQL context fields.
+- `WithInterceptResponseResultHandlerFunc(handler)`: Specifies a custom function to intercept and handle GraphQL response results before they are returned.
+- `WithInterceptFieldsResultHandlerFunc(handler)`: Specifies a custom function to intercept and handle GraphQL field-level results and errors during execution.
 
 ## Example
 
