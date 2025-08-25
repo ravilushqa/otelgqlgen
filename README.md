@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=ravilushqa&project=otelgqlgen&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 # OpenTelemetry-Go gqlgen Instrumentation
 
 [![ci](https://github.com/ravilushqa/otelgqlgen/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/ravilushqa/otelgqlgen/actions/workflows/ci.yaml)
